@@ -1,8 +1,21 @@
 pub mod lib {
 
-use std::process::{Command, Stdio};
 use colored::Colorize;
-use std::{io, io::Write};
+use std::{
+        process::{
+            Command,
+            Stdio
+        },
+        io::{ Write, self, BufRead },
+        fs::File,
+        path::Path,
+        thread::sleep,
+        time::Duration,
+    };
+use progress_bar::*;
+use qr2term::*;
+// use qrcode_generator::{ QrCodeEcc, QrSegment };
+use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
 
     pub enum Menu {
         Help,
@@ -10,6 +23,7 @@ use std::{io, io::Write};
         Diceware(String),
         Notenum(String),
     }
+
 
     pub fn get_help() {
         println!("\nrequire: ");
@@ -27,14 +41,24 @@ use std::{io, io::Write};
         match menu_list {
             Menu::Help =>  get_help(),
             Menu::Diceware(arg) => {
+                let passphrase = diceware_generate(arg.as_str(),"minilock","-");
+                let passphrase_copy = passphrase.clone();
+
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
                 println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
-                println!("{}{}\n", "passphrase: ".green(), diceware_generate(arg.as_str(),"minilock","-")[0]
+                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
                          .color("white")
                          .on_color("black")
                          .italic()
                 );
+
+                store_passphrase_tofile(passphrase_copy[0].to_string());
+                println!("{}", gpg_encrypt().unwrap().bright_green());
+                let val_for_generate = get_secret_gpg("secret.gpg"); 
+                qrcode_generate_to_file(val_for_generate.as_str());
+                println!("{}", shred_helper_files().unwrap().bright_green());
+
             },
             Menu::Eff => {
                 println!("\neff wordlist");
@@ -91,4 +115,139 @@ use std::{io, io::Write};
 
         input.trim().to_string()
     }
+
+
+    pub fn gpg_encrypt() -> Result<String, String> { 
+        let gpg = Command::new("gpg")
+            .args(&[
+                  "-o","secret.gpg","--symmetric","--s2k-mode","3","--s2k-count","65011712","--s2k-digest-algo",
+                  "SHA512","--cipher-algo","AES256","--armor", "frost"
+            ])
+            .stdout(Stdio::piped())
+            .output()
+            .expect("> gpg_encrypt() failed!");
+
+        let gpg_utf8 = String::from_utf8_lossy(&gpg.stdout);
+        let gpg_utf8_err = String::from_utf8_lossy(&gpg.stderr);
+
+        if gpg_utf8.is_empty() {
+            Ok(format!("> gpg_encrypt successfully."))
+        } else {
+            Err(format!("> something wrong with gpg_utf8_err! : {}", gpg_utf8_err))
+        }
+    }
+
+    pub fn store_passphrase_tofile(pass_valid: String) {
+
+        let pass_valid_copy = pass_valid.clone();
+
+        validate_passphrase(pass_valid_copy);
+
+        let path = Path::new("frost");
+        let show_path = path.display();
+
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("> couldn't create path {}: {}", show_path, why),
+            Ok(file) => file,
+        };
+
+        match file.write_all(format!("{}\n", pass_valid).as_bytes()) {
+            Err(why) => panic!("> couldn't write to {}: {}", show_path, why),
+            Ok(_) => println!("{}{}", "> successfully wrote to ".purple(), show_path),
+        };
+    }
+
+    pub fn validate_passphrase(val: String) -> String {
+        loop {
+            // some kind a time sleep
+            print!("{}", "> please validate passphrase : ".bright_blue());
+            let check = catch_stdin();
+
+            if check == val {
+                println!("{}", "> validate successfully.".bright_green());
+                break;
+            }
+
+            if check == "--show" {
+                println!("{}{}", "> what store passphrase: ".bright_green(), val.yellow());
+                // some kind a time sleep
+            }
+        }
+        val.to_string()
+    }
+    
+    pub fn shred_helper_files() -> Result<String, String> { 
+        let shred = Command::new("shred")
+            .args(&[
+                  "-vuzn","20","frost","secret.gpg"
+            ])
+            .stdout(Stdio::piped())
+            .output()
+            .expect("> shred_helper_files failed!");
+
+        let shred_utf8 = String::from_utf8_lossy(&shred.stdout);
+        let shred_utf8_err = String::from_utf8_lossy(&shred.stderr);
+        
+        let shred_copy_split = shred_utf8_err.split("\n");
+        let shred_copy_collect: Vec<&str> = shred_copy_split.collect();
+        println!("{}", "> Shreding cache!: ".magenta());
+        process_bar(shred_copy_collect.len()/2);
+
+
+        if shred_utf8.is_empty() {
+            Ok(format!("{}", "> shred successfully. ".magenta()))
+        } else {
+            Err(format!("> something wrong with shreding files"))
+        }
+    }
+
+    pub fn process_bar(val: usize) {
+       init_progress_bar(val);
+       set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
+
+       let mut i = 0;
+       while i < val {
+           sleep(Duration::from_millis(500));
+           inc_progress_bar();
+           i += 1;
+       }
+       finalize_progress_bar();
+    }
+
+    // Need better generate qrcode
+    pub fn qrcode_generate_to_file(val: &str) {
+
+        let mut qrcode = QrCode::new(val.as_bytes(), QrCodeEcc::Medium).unwrap();
+
+        qrcode.margin(50);
+        qrcode.zoom(10);
+        
+        let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
+        std::fs::write("qrcode/qrcode_name_file_tbd.png", buffer)
+            .expect(format!("{}", ">Something wrong with qrcode_generate write file".red()).as_str());
+
+        print_qr(val).unwrap();
+
+    }
+
+    pub fn get_secret_gpg(string_path: &str) -> String {
+        let mut bucket_val = String::new();
+        if let Ok(lines) = read_a_file(string_path) {
+            for line in lines {
+                if let Ok(val) = line {
+                    bucket_val.push_str(val.as_str());
+                    bucket_val.push_str("\n");
+                }
+            }
+        }
+        bucket_val
+    }
+
+    fn read_a_file<T>(filename: T) -> io::Result<io::Lines<io::BufReader<File>>>
+    where T: AsRef<Path>, 
+    {
+        let file = File::open(filename)?;
+        Ok(io::BufReader::new(file).lines())
+    }
+
 }
