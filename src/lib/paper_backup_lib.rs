@@ -16,6 +16,7 @@ use progress_bar::*;
 use qr2term::*;
 // use qrcode_generator::{ QrCodeEcc, QrSegment };
 use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
+use chrono::prelude::*;
 
     pub enum Menu {
         Help,
@@ -46,17 +47,24 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
 
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
-                println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
-                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
+                println!("{}{}", "   entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
+                println!("{}{}\n", "   passphrase: ".green(), passphrase[0]
                          .color("white")
                          .on_color("black")
                          .italic()
                 );
 
                 store_passphrase_tofile(passphrase_copy[0].to_string());
+
                 println!("{}", gpg_encrypt().unwrap().bright_green());
+
                 let val_for_generate = get_secret_gpg("secret.gpg"); 
-                qrcode_generate_to_file(val_for_generate.as_str());
+                let hash = hashlib_python();
+
+                println!("{}{}", "Hash thing: ".bright_red(), hash);
+                qrcode_generate_to_file(val_for_generate.as_str(), hash.as_str());
+
+                
                 println!("{}", shred_helper_files().unwrap().bright_green());
 
             },
@@ -177,6 +185,9 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
     }
     
     pub fn shred_helper_files() -> Result<String, String> { 
+
+        println!("{}", "> Shreding secret.gpg, frost, 20: ".magenta());
+
         let shred = Command::new("shred")
             .args(&[
                   "-vuzn","20","frost","secret.gpg"
@@ -190,8 +201,7 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
         
         let shred_copy_split = shred_utf8_err.split("\n");
         let shred_copy_collect: Vec<&str> = shred_copy_split.collect();
-        println!("{}", "> Shreding cache!: ".magenta());
-        process_bar(shred_copy_collect.len()/2);
+        process_bar(shred_copy_collect.len());
 
 
         if shred_utf8.is_empty() {
@@ -207,7 +217,7 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
 
        let mut i = 0;
        while i < val {
-           sleep(Duration::from_millis(500));
+           sleep(Duration::from_millis(25));
            inc_progress_bar();
            i += 1;
        }
@@ -215,15 +225,21 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
     }
 
     // Need better generate qrcode
-    pub fn qrcode_generate_to_file(val: &str) {
+    pub fn qrcode_generate_to_file(val: &str, val2: &str) {
 
+        let utc: DateTime<Utc> = Utc::now();
+        let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
+        print!("{}", "> Name your qrcode file: ".bright_yellow());
+        
+        let name_png = catch_stdin();
+        let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
         let mut qrcode = QrCode::new(val.as_bytes(), QrCodeEcc::Medium).unwrap();
 
         qrcode.margin(50);
         qrcode.zoom(10);
         
         let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
-        std::fs::write("qrcode/qrcode_name_file_tbd.png", buffer)
+        std::fs::write(name_png_print, buffer)
             .expect(format!("{}", ">Something wrong with qrcode_generate write file".red()).as_str());
 
         print_qr(val).unwrap();
@@ -248,6 +264,38 @@ use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
     {
         let file = File::open(filename)?;
         Ok(io::BufReader::new(file).lines())
+    }
+
+    fn hashlib_python() -> String {
+        let hashlib_python = Command::new("python3")
+            .args(&[
+                  "hash.py"
+            ])
+            .stdout(Stdio::piped())
+            .output()
+            .expect("> somthing wrong with hashlib_python!");
+
+        let gpg_utf8 = String::from_utf8_lossy(&hashlib_python.stdout);
+
+        let hashlib_split = gpg_utf8.split("\n");
+        let hashlib_vec: Vec<&str> = hashlib_split.collect();
+        let hashlib_vec_copy = hashlib_vec.clone();
+
+        println!("{}", "> Hashlib python : ".bright_yellow());
+        for line in hashlib_vec {
+            if line == ""{
+                println!();
+            }
+
+            if line == "-----END PGP MESSAGE-----" {
+                println!("{}",line.bright_green());
+                break;
+            }
+            println!("{}",line.bright_green());
+        }
+
+        hashlib_vec_copy[0].to_string()
+
     }
 
 }

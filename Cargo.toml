@@ -9,9 +9,12 @@ name = "paper_backup"
 path = "src/lib/paper_backup_lib.rs"
 
 [dependencies]
+base16ct = "0.1.1"
+base64ct = "1.5.3"
+chrono = "0.4.22"
 colored = "2.0.0"
 eff-wordlist = "1.0.2"
 progress_bar = "1.0.3"
 qr2term = "0.3.1"
 qrcode-png = "0.4.1"
-
+sha2 = "0.10.6"
