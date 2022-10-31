@@ -22,6 +22,7 @@ use chrono::prelude::*;
         Help,
         Eff,
         Diceware(String),
+        DicewareLock(String),
         Notenum(String),
     }
 
@@ -33,9 +34,10 @@ use chrono::prelude::*;
         println!("usage: paper_backup [--help] [--eff]");
         println!("");
         println!("option: ");
-        println!("       --help      :  Help command!");
-        println!("       --eff       :  Generate Eff random wordlist");
-        println!("       --diceware  :  Generate passphrase using diceware crate\n");
+        println!("       --help           :  Help command!");
+        println!("       --eff            :  Generate Eff random wordlist");
+        println!("       --diceware       :  Generate passphrase using diceware crate");
+        println!("       --diceware-lock  :  Generate paper backup with --diceware\n");
     }
 
     pub fn menu_option(menu_list: Menu) {
@@ -43,12 +45,25 @@ use chrono::prelude::*;
             Menu::Help =>  get_help(),
             Menu::Diceware(arg) => {
                 let passphrase = diceware_generate(arg.as_str(),"minilock","-");
+
+                println!("{}", "> diceware".bright_cyan());
+                println!("{}", "---------".bright_cyan());
+                println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
+                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
+                         .color("white")
+                         .on_color("black")
+                         .italic()
+                );
+
+            },
+            Menu::DicewareLock(arg) => {
+                let passphrase = diceware_generate(arg.as_str(),"minilock","-");
                 let passphrase_copy = passphrase.clone();
 
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
-                println!("{}{}", "   entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
-                println!("{}{}\n", "   passphrase: ".green(), passphrase[0]
+                println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
+                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
                          .color("white")
                          .on_color("black")
                          .italic()

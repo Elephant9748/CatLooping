@@ -15,18 +15,26 @@ fn main() {
             menu_option(Menu::Help);
         }
 
+        if arg == "--diceware" {
+            print!("{}", "\n> How many wordlist: ".bright_green());
+            let diceware_only = catch_stdin();
+
+            menu_option(Menu::Diceware(diceware_only)); 
+        }
+
         if arg == "--diceware-lock" {
-            print!("{}", "\n> Home many wordlist: ".bright_green());
+            print!("{}", "\n> How many wordlist: ".bright_green());
             let helper_catch_stdin = catch_stdin();
 
-            menu_option(Menu::Diceware(helper_catch_stdin)); 
+            menu_option(Menu::DicewareLock(helper_catch_stdin)); 
         }
 
         if arg == "--eff" {
             menu_option(Menu::Eff);
         }
 
-        if arg != "--eff" && arg != "--diceware-lock" && arg != "--help" && arg != "--lock" {
+        if arg != "--eff" && arg != "--diceware-lock" && arg != "--help"
+           && arg != "--diceware"{
             not_in_the_menu.push_str(&arg);
             not_in_the_menu.push(' ');
         }
