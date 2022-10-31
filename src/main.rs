@@ -26,10 +26,6 @@ fn main() {
             menu_option(Menu::Eff);
         }
 
-        // if arg == "--qrcode" {
-        //     qrcode_generate()
-        // }
-
         if arg != "--eff" && arg != "--diceware-lock" && arg != "--help" && arg != "--lock" {
             not_in_the_menu.push_str(&arg);
             not_in_the_menu.push(' ');

@@ -61,9 +61,8 @@ use chrono::prelude::*;
                 let val_for_generate = get_secret_gpg("secret.gpg"); 
                 let hash = hashlib_python();
 
-                println!("{}{}", "Hash thing: ".bright_red(), hash);
-                qrcode_generate_to_file(val_for_generate.as_str(), hash.as_str());
-
+                println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
                 
                 println!("{}", shred_helper_files().unwrap().bright_green());
 
@@ -225,7 +224,7 @@ use chrono::prelude::*;
     }
 
     // Need better generate qrcode
-    pub fn qrcode_generate_to_file(val: &str, val2: &str) {
+    pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str) {
 
         let utc: DateTime<Utc> = Utc::now();
         let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
@@ -243,6 +242,40 @@ use chrono::prelude::*;
             .expect(format!("{}", ">Something wrong with qrcode_generate write file".red()).as_str());
 
         print_qr(val).unwrap();
+
+        let status_short = qrcode_with_short_hash(
+            val2, 
+            utc_to_png.as_str(), 
+            name_png.as_str(), 
+            val3).unwrap();
+        
+        println!("{}", status_short);
+
+    }
+
+    fn qrcode_with_short_hash(hash: &str, utc_time: &str, name_png: &str, short_hash: &str) -> Result<String, String> {
+        
+        let qrcode_short = Command::new("convert")
+            .args(&[
+                  format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(), 
+                  "-gravity", "center", "-scale", "200%",
+                  "-extent","100%", "-scale", "100%",
+                  "-gravity", "south",
+                  "-font", "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf",
+                  "-pointsize","24","-fill","black",
+                  "-draw", format!("text 0,50 '{}-{}'", short_hash, name_png).as_str(),
+                  format!("qrcode/{}_{}_{}.png", short_hash, utc_time, name_png).as_str()
+            ])
+            .stdout(Stdio::piped())
+            .output()
+            .expect("> somthing wrong with hashlib_python!");
+
+        let qrcode_short_utf8 = String::from_utf8_lossy(&qrcode_short.stdout);
+        if qrcode_short_utf8.is_empty() {
+            Ok(format!("{}", "> qrcode_with_short_hash successfully.".green()))
+        } else {
+            Err(format!("{}","> somthing wrong with qrcode_with_short_hash!".bright_red()))
+        }
 
     }
 
@@ -266,7 +299,7 @@ use chrono::prelude::*;
         Ok(io::BufReader::new(file).lines())
     }
 
-    fn hashlib_python() -> String {
+    fn hashlib_python() -> Vec<String> {
         let hashlib_python = Command::new("python3")
             .args(&[
                   "hash.py"
@@ -275,9 +308,9 @@ use chrono::prelude::*;
             .output()
             .expect("> somthing wrong with hashlib_python!");
 
-        let gpg_utf8 = String::from_utf8_lossy(&hashlib_python.stdout);
+        let hashlib_python = String::from_utf8_lossy(&hashlib_python.stdout);
 
-        let hashlib_split = gpg_utf8.split("\n");
+        let hashlib_split = hashlib_python.split("\n");
         let hashlib_vec: Vec<&str> = hashlib_split.collect();
         let hashlib_vec_copy = hashlib_vec.clone();
 
@@ -294,7 +327,7 @@ use chrono::prelude::*;
             println!("{}",line.bright_green());
         }
 
-        hashlib_vec_copy[0].to_string()
+        vec![hashlib_vec_copy[0].to_string(), hashlib_vec_copy[1].to_string()]
 
     }
 
