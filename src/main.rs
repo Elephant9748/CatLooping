@@ -33,8 +33,12 @@ fn main() {
             menu_option(Menu::Eff);
         }
 
+        if arg == "--unlock" {
+            menu_option(Menu::Unlock);
+        }
+
         if arg != "--eff" && arg != "--diceware-lock" && arg != "--help"
-           && arg != "--diceware"{
+           && arg != "--diceware" && arg != "--unlock" {
             not_in_the_menu.push_str(&arg);
             not_in_the_menu.push(' ');
         }

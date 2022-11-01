@@ -8,7 +8,6 @@ use std::{
         },
         io::{ Write, self, BufRead },
         fs::File,
-        fs::OpenOptions,
         path::Path,
         thread::sleep,
         time::Duration,
@@ -71,18 +70,17 @@ use chrono::prelude::*;
                          .italic()
                 );
 
-                store_tofile(passphrase_copy[0].to_string());
+                store_passphrase_tofile(passphrase_copy[0].to_string());
 
                 println!("{}", gpg_encrypt().unwrap().bright_green());
 
                 let val_for_generate = get_secret_gpg("secret.gpg"); 
-
                 let hash = hashlib_python();
 
                 println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
                 qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
                 
-                println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+                println!("{}", shred_helper_files().unwrap().bright_green());
 
             },
             Menu::Unlock => {
@@ -165,11 +163,11 @@ use chrono::prelude::*;
         }
     }
 
-    pub fn store_tofile(store_val: String) {
+    pub fn store_passphrase_tofile(pass_valid: String) {
 
-        let store_val_copy = store_val.clone();
+        let pass_valid_copy = pass_valid.clone();
 
-        validate_passphrase(store_val_copy);
+        validate_passphrase(pass_valid_copy);
 
         let path = Path::new("frost");
         let show_path = path.display();
@@ -179,7 +177,7 @@ use chrono::prelude::*;
             Ok(file) => file,
         };
 
-        match file.write_all(format!("{}\n", store_val).as_bytes()) {
+        match file.write_all(format!("{}\n", pass_valid).as_bytes()) {
             Err(why) => panic!("> couldn't write to {}: {}", show_path, why),
             Ok(_) => println!("{}{}", "> successfully wrote to ".purple(), show_path),
         };
@@ -204,23 +202,14 @@ use chrono::prelude::*;
         val.to_string()
     }
     
-    pub fn shred_helper_files(val: Vec<&str>) -> Result<String, String> { 
+    pub fn shred_helper_files() -> Result<String, String> { 
 
-        let mut shred_args:Vec<&str> = Vec::new();
-        shred_args.push("-vuzn");
-        shred_args.push("20");
-        
-        let mut what_file_shreding = String::new();
-        for v in val {
-            what_file_shreding.push_str(v);
-            what_file_shreding.push_str(", ");
-            shred_args.push(v);
-        }
-        
-        println!("{}{} 20: ", "> Shreding ".magenta(), what_file_shreding.magenta());
-        
+        println!("{}", "> Shreding secret.gpg, frost, 20: ".magenta());
+
         let shred = Command::new("shred")
-            .args(&shred_args)
+            .args(&[
+                  "-vuzn","20","frost","secret.gpg"
+            ])
             .stdout(Stdio::piped())
             .output()
             .expect("> shred_helper_files failed!");
@@ -390,25 +379,18 @@ use chrono::prelude::*;
         println!("{}", "List of orcode".yellow());
         println!("{}", "--------------".yellow());
         let mut index = 0;
+        let mut index_value = index.clone();
         while index < output.len() {
-            println!("{}. {}", index , output[index].bright_cyan());
+            index_value += 1;
+            println!("{}. {}", index_value.to_string().as_str() , output[index].bright_cyan());
             index += 1;
         }
 
-        print!("{}", "\n> chose file name by index or name: ".bright_green());
+        print!("{}", "\n> chose file name by index or name: ");
         let chose = catch_stdin();
 
         let out_chose = stdin_check_numeric(chose.as_str());
-
-        let mut path_name = String::new();
-        if out_chose {
-            let index_path_name = chose.trim().parse::<usize>().unwrap();
-            path_name.push_str(output[index_path_name]);
-        } else {
-            path_name.push_str(format!("{}", chose).as_str());
-        }
-
-        scan_qrcode(path_name.as_str());
+        println!("{}", out_chose.to_string().bright_red());
 
     }
 
@@ -430,60 +412,13 @@ use chrono::prelude::*;
     }
 
 
-    fn scan_qrcode(name_of_file: &str) {
-        let qrcode_name_location = format!("qrcode/{}", name_of_file);
+    fn scan_qrcode() {
         let zbar = Command::new("zbarimg")
             .args(&[
-                  "--nodisplay", "--nodbus", "--quiet",
-                  qrcode_name_location.as_str()
             ])
             .stdout(Stdio::piped())
             .output()
-            .expect(format!("{}", "somthing wrong with zbar piped()".bright_red()).as_str());
-
-        let zbar_utf8 = String::from_utf8_lossy(&zbar.stdout);
-        let zbar_utf8_replace = zbar_utf8.replace("QR-Code:", "");
-        let zbar_utf8_split = zbar_utf8_replace.split("\n");
-        let zbar_utf8_vec: Vec<&str> = zbar_utf8_split.collect();
-        
-        // write to qrcode_decode.gpg
-        let mut file = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open("qrcode_encode.gpg").unwrap();
-        
-        for line in zbar_utf8_vec.into_iter() {
-            writeln!(&mut file,"{}", line).expect(
-                format!("{}","> something wrong with writeln!".bright_red())
-                .as_str());
-        }
-
-        let gpgterm = get_secret_gpg("qrcode_encode.gpg");
-        println!("> {}", gpgterm.bright_yellow());
-
-        println!("{}{}", "> VALUE: ".bright_green(), gpg_decrypt().unwrap().bright_yellow());
-
-        shred_helper_files(["qrcode_encode.gpg"].to_vec()).unwrap().bright_green();
+            .expect(format!("{}", "somthing wrong with zbar piped()".bright_red()).as_str())
     }
-    
-    pub fn gpg_decrypt() -> Result<String, String> { 
-        let gpg = Command::new("gpg")
-            .args(&[
-                  "--decrypt", "qrcode_encode.gpg"
-            ])
-            .stdout(Stdio::piped())
-            .output()
-            .expect("> gpg_decrypt() failed!");
 
-        let gpg_utf8 = String::from_utf8_lossy(&gpg.stdout);
-        let gpg_utf8_err = String::from_utf8_lossy(&gpg.stderr);
-        let gpg_utf8_split = gpg_utf8.split("\n");
-        let gpg_utf8_vec: Vec<&str> = gpg_utf8_split.collect();
-
-        if !gpg_utf8.is_empty() {
-            Ok(format!("{}", gpg_utf8_vec[0]))
-        } else {
-            Err(format!("> something wrong with gpg_utf8_err! : {}", gpg_utf8_err))
-        }
-    }
 }
