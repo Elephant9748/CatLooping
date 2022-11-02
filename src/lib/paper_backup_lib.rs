@@ -71,23 +71,28 @@ use chrono::prelude::*;
                          .italic()
                 );
 
-                store_tofile(passphrase_copy[0].to_string());
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                if forward_this == "y" || forward_this == "Y" {
+                    store_tofile(passphrase_copy[0].to_string());
 
-                println!("{}", gpg_encrypt().unwrap().bright_green());
+                    println!("{}", gpg_encrypt().unwrap().bright_green());
 
-                let val_for_generate = get_secret_gpg("secret.gpg"); 
+                    let val_for_generate = get_secret_gpg("secret.gpg"); 
 
-                let hash = hashlib_python();
+                    let hash = hashlib_python();
 
-                println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
-                
-                println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                    qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
+
+                    println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+                } else {
+                    exit_this();
+                }
+
 
             },
-            Menu::Unlock => {
-                get_list_qrcode();
-            },
+            Menu::Unlock => get_list_qrcode(),
             Menu::Eff => {
                 println!("\neff wordlist");
                 println!("------------");
@@ -169,6 +174,7 @@ use chrono::prelude::*;
 
         let store_val_copy = store_val.clone();
 
+        clear_screen();
         validate_passphrase(store_val_copy);
 
         let path = Path::new("frost");
@@ -188,6 +194,7 @@ use chrono::prelude::*;
     pub fn validate_passphrase(val: String) -> String {
         loop {
             // some kind a time sleep
+            println!("{}", "> type '--show' to look passphrase previously".bright_yellow());
             print!("{}", "> please validate passphrase : ".bright_blue());
             let check = catch_stdin();
 
@@ -197,6 +204,7 @@ use chrono::prelude::*;
             }
 
             if check == "--show" {
+                clear_screen();
                 println!("{}{}", "> what store passphrase: ".bright_green(), val.yellow());
                 // some kind a time sleep
             }
@@ -362,6 +370,7 @@ use chrono::prelude::*;
     }
 
     fn get_list_qrcode() {
+        clear_screen();
         let list_of_qrcode = Command::new("ls")
             .args(&[
                  "-a", "qrcode"
@@ -409,10 +418,20 @@ use chrono::prelude::*;
         }
 
         scan_qrcode(path_name.as_str());
+        
+        print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
+        let confirm = catch_stdin();
+        if confirm == "Y" || confirm == "y" {
+            println!("{}{}", "> passphrase: ".bright_green(), gpg_decrypt().unwrap().bright_yellow());
+        } else {
+            println!("{}{}", "> passphrase: ".bright_green(), "Node".bright_red());
+        }
+        
+        shred_helper_files(["qrcode_encode.gpg"].to_vec()).unwrap().bright_green();
 
     }
 
-    fn stdin_check_numeric(val: &str) -> bool {
+    pub fn stdin_check_numeric(val: &str) -> bool {
         let chars: Vec<char> = val.chars().collect();
         let chars_copy = chars.clone();
         let mut numeric = 0;
@@ -461,9 +480,6 @@ use chrono::prelude::*;
         let gpgterm = get_secret_gpg("qrcode_encode.gpg");
         println!("> {}", gpgterm.bright_yellow());
 
-        println!("{}{}", "> VALUE: ".bright_green(), gpg_decrypt().unwrap().bright_yellow());
-
-        shred_helper_files(["qrcode_encode.gpg"].to_vec()).unwrap().bright_green();
     }
     
     pub fn gpg_decrypt() -> Result<String, String> { 
@@ -486,4 +502,40 @@ use chrono::prelude::*;
             Err(format!("> something wrong with gpg_utf8_err! : {}", gpg_utf8_err))
         }
     }
+
+    fn clear_screen() {
+        std::process::Command::new("clear").status().unwrap();
+    }
+
+    fn exit_this() {
+        std::process::exit(0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::lib::*;
+
+    #[test]
+    fn test_diceware_generate() {
+        let dice:Vec<String> = diceware_generate("1","minilock","-");
+        let mut val = false;
+        for el in dice {
+            let n = stdin_check_numeric(el.as_str());
+            if !n {
+                val = !n
+            } else {
+                val = n
+            }
+        }
+        assert!(val);
+    }
+
+    #[test]
+    fn test_generate_eff_word() {
+        let eff:String = generate_eff_word();
+        let n = stdin_check_numeric(eff.as_str());
+        assert_eq!(n, false);
+    }
+
 }
