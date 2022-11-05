@@ -11,37 +11,31 @@ fn main() {
 
     for arg in main_args {
 
-        if arg == "--help" {
-            menu_option(Menu::Help);
+        match arg {
+            val if val == "--help" => menu_option(Menu::Help),
+            val if val == "--diceware" => {
+                print!("{}", "\n> How many wordlist: ".bright_green());
+                let diceware_only = catch_stdin();
+
+                menu_option(Menu::Diceware(diceware_only)); 
+            },
+            val if val == "--diceware-lock" => {
+                print!("{}", "\n> How many wordlist: ".bright_green());
+                let helper_catch_stdin = catch_stdin();
+
+                menu_option(Menu::DicewareLock(helper_catch_stdin)); 
+            },
+            val if val == "--eff" => menu_option(Menu::Eff),
+            val if val == "--unlock" => menu_option(Menu::Unlock),
+            val if val == "--convert" => menu_option(Menu::Convert),
+            val if val != "--eff" && val != "--diceware-lock" && val != "--help" 
+                && val != "--diceware" && val != "--unlock" && val != "--convert" => {
+                    not_in_the_menu.push_str(&val);
+                    not_in_the_menu.push(' ');
+                },
+            _ => println!("{}", "> match arg main not found list".bright_red()),
         }
 
-        if arg == "--diceware" {
-            print!("{}", "\n> How many wordlist: ".bright_green());
-            let diceware_only = catch_stdin();
-
-            menu_option(Menu::Diceware(diceware_only)); 
-        }
-
-        if arg == "--diceware-lock" {
-            print!("{}", "\n> How many wordlist: ".bright_green());
-            let helper_catch_stdin = catch_stdin();
-
-            menu_option(Menu::DicewareLock(helper_catch_stdin)); 
-        }
-
-        if arg == "--eff" {
-            menu_option(Menu::Eff);
-        }
-
-        if arg == "--unlock" {
-            menu_option(Menu::Unlock);
-        }
-
-        if arg != "--eff" && arg != "--diceware-lock" && arg != "--help"
-           && arg != "--diceware" && arg != "--unlock" {
-            not_in_the_menu.push_str(&arg);
-            not_in_the_menu.push(' ');
-        }
     }
 
     if not_in_the_menu != "" {

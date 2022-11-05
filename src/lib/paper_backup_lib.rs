@@ -1,23 +1,24 @@
 pub mod lib {
 
-use colored::Colorize;
-use std::{
-        process::{
-            Command,
-            Stdio
-        },
-        io::{ Write, self, BufRead },
-        fs::File,
-        fs::OpenOptions,
-        path::Path,
-        thread::sleep,
-        time::Duration,
-    };
-use progress_bar::*;
-use qr2term::*;
-// use qrcode_generator::{ QrCodeEcc, QrSegment };
-use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
-use chrono::prelude::*;
+    use colored::Colorize;
+    use std::{
+            process::{
+                Command,
+                Stdio
+            },
+            io::{ Write, self, BufRead, Cursor, Read },
+            fs::File,
+            fs::OpenOptions,
+            path::Path,
+            thread::sleep,
+            time::Duration,
+        };
+    use progress_bar::*;
+    use qr2term::*;
+    use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
+    use chrono::prelude::*;
+    use cipher_crypt::Rot13;
+    use base64_stream::FromBase64Reader;
 
     pub enum Menu {
         Help,
@@ -26,6 +27,19 @@ use chrono::prelude::*;
         DicewareLock(String),
         Notenum(String),
         Unlock,
+        Convert,
+    }
+
+    macro_rules! clear_screen {
+        () => {
+            std::process::Command::new("clear").status().unwrap();
+        }
+    }
+
+    macro_rules! exit_this {
+        () => {
+            std::process::exit(0);
+        }
     }
 
 
@@ -87,7 +101,7 @@ use chrono::prelude::*;
 
                     println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
                 } else {
-                    exit_this();
+                    exit_this!();
                 }
 
 
@@ -99,8 +113,9 @@ use chrono::prelude::*;
                 println!("{}{}\n","Output: ".green(),  generate_eff_word());
             }
             Menu::Notenum(arg) => {
-                println!("> {} {}",arg.bright_red(), "Menu Argument not available please check help: --help".bright_yellow());
-            }
+                println!("{} {}",arg.bright_red(), "> Menu Argument not available please check help: --help".bright_yellow());
+            },
+            Menu::Convert => convert_string(),
         }
     }
 
@@ -174,7 +189,6 @@ use chrono::prelude::*;
 
         let store_val_copy = store_val.clone();
 
-        clear_screen();
         validate_passphrase(store_val_copy);
 
         let path = Path::new("frost");
@@ -192,19 +206,28 @@ use chrono::prelude::*;
     }
 
     pub fn validate_passphrase(val: String) -> String {
+        clear_screen!();
         loop {
             // some kind a time sleep
             println!("{}", "> type '--show' to look passphrase previously".bright_yellow());
             print!("{}", "> please validate passphrase : ".bright_blue());
             let check = catch_stdin();
+            clear_screen!();
+
+            if check == "" {
+                let val_copy = val.clone();
+                validate_passphrase(val_copy);
+                break;
+            }
 
             if check == val {
                 println!("{}", "> validate successfully.".bright_green());
+                sleep(Duration::from_millis(500));
                 break;
             }
 
             if check == "--show" {
-                clear_screen();
+                clear_screen!();
                 println!("{}{}", "> what store passphrase: ".bright_green(), val.yellow());
                 // some kind a time sleep
             }
@@ -225,7 +248,7 @@ use chrono::prelude::*;
             shred_args.push(v);
         }
         
-        println!("{}{} 20: ", "> Shreding ".magenta(), what_file_shreding.magenta());
+        println!("{}{}{}", "> Shreding ".magenta(), what_file_shreding.magenta(), " ,20: ".bright_yellow());
         
         let shred = Command::new("shred")
             .args(&shred_args)
@@ -242,7 +265,7 @@ use chrono::prelude::*;
 
 
         if shred_utf8.is_empty() {
-            Ok(format!("{}", "> shred successfully. ".magenta()))
+            Ok(format!("{}", "> shred successfully. ".green()))
         } else {
             Err(format!("> something wrong with shreding files"))
         }
@@ -254,7 +277,7 @@ use chrono::prelude::*;
 
        let mut i = 0;
        while i < val {
-           sleep(Duration::from_millis(25));
+           sleep(Duration::from_millis(15));
            inc_progress_bar();
            i += 1;
        }
@@ -270,6 +293,7 @@ use chrono::prelude::*;
         
         let name_png = catch_stdin();
         let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
+        let name_png_print_copy = name_png_print.clone();
         let mut qrcode = QrCode::new(val.as_bytes(), QrCodeEcc::Medium).unwrap();
 
         qrcode.margin(50);
@@ -280,6 +304,7 @@ use chrono::prelude::*;
             .expect(format!("{}", ">Something wrong with qrcode_generate write file".red()).as_str());
 
         print_qr(val).unwrap();
+        println!("{}{}", "> qrcode location : ".green(), name_png_print_copy.magenta());
 
         let status_short = qrcode_with_short_hash(
             val2, 
@@ -359,10 +384,10 @@ use chrono::prelude::*;
             }
 
             if line == "-----END PGP MESSAGE-----" {
-                println!("{}",line.bright_green());
+                println!("{}",line.green());
                 break;
             }
-            println!("{}",line.bright_green());
+            println!("{}",line.green());
         }
 
         vec![hashlib_vec_copy[0].to_string(), hashlib_vec_copy[1].to_string()]
@@ -370,7 +395,7 @@ use chrono::prelude::*;
     }
 
     fn get_list_qrcode() {
-        clear_screen();
+        clear_screen!();
         let list_of_qrcode = Command::new("ls")
             .args(&[
                  "-a", "qrcode"
@@ -424,7 +449,7 @@ use chrono::prelude::*;
         if confirm == "Y" || confirm == "y" {
             println!("{}{}", "> passphrase: ".bright_green(), gpg_decrypt().unwrap().bright_yellow());
         } else {
-            println!("{}{}", "> passphrase: ".bright_green(), "Node".bright_red());
+            println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
         }
         
         shred_helper_files(["qrcode_encode.gpg"].to_vec()).unwrap().bright_green();
@@ -503,18 +528,54 @@ use chrono::prelude::*;
         }
     }
 
-    fn clear_screen() {
-        std::process::Command::new("clear").status().unwrap();
+    // Need serialize base64 to string from bytes
+    // Maybe Serde will d
+    fn convert_string() {
+        print!("\n{}","> Input string: ".bright_green());
+        let raw_txt = catch_stdin();
+        let raw_txt_copy = raw_txt.clone();
+        let rot13_txt = from_rot13(raw_txt.as_str());
+
+        println!("\n{}", "|".bright_blue());
+        println!("{}", "|".bright_blue());
+        println!("{}{}", "--> Text  : ".bright_blue(), raw_txt_copy);
+        println!("{}", "|".bright_blue());
+        println!("{}", "|".bright_blue());
+        println!("{}{}", "--> Rot13 : ".bright_blue(), rot13_txt.bright_yellow());
+
+        let mut reader = FromBase64Reader::new(Cursor::new(rot13_txt.as_bytes().to_vec()));
+        let mut base64 = String::new();
+        reader.read_to_string(&mut base64).unwrap();
+        println!("{}", "|".bright_blue());
+        println!("{}", "|".bright_blue());
+        println!("{}\n{}","--> Base64".bright_blue(), base64.bright_green());
+
     }
 
-    fn exit_this() {
-        std::process::exit(0);
+    pub fn to_rot13(val: &str) -> String {
+        Rot13::encrypt(val)
     }
+
+    pub fn from_rot13(val: &str) -> String {
+        Rot13::decrypt(val)
+    }
+
 }
 
 #[cfg(test)]
 mod tests {
     use crate::lib::*;
+
+    #[test]
+    fn test_from_rot13() {
+        let txt = "grkg_sebz_ebg13";
+        assert_eq!(from_rot13(&txt), "text_from_rot13");
+    }
+    #[test]
+    fn test_to_rot13() {
+        let txt = "text_to_rot13";
+        assert_eq!(to_rot13(txt), "grkg_gb_ebg13");
+    }
 
     #[test]
     fn test_diceware_generate() {
