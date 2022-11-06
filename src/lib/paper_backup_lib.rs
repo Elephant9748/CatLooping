@@ -396,44 +396,24 @@ pub mod lib {
         Ok(io::BufReader::new(file).lines())
     }
 
-    // no longer need it.
-    fn _hashlib_python() -> Vec<String> {
-        let hashlib_python = Command::new("python3")
-            .args(&[
-                  "hash.py"
-            ])
-            .stdout(Stdio::piped())
-            .output()
-            .expect("> somthing wrong with hashlib_python!");
+    fn get_list_qrcode() {
 
-        let hashlib_python = String::from_utf8_lossy(&hashlib_python.stdout);
+        println!("\n{}", "If no input go to default directory qrcode/".bright_yellow());
+        println!("{}", "By press Enter!".bright_yellow());
+        print!("{}", "Input path of qrcode : ".bright_green());
+        let path_stdin_val = catch_stdin();
 
-        let hashlib_split = hashlib_python.split("\n");
-        let hashlib_vec: Vec<&str> = hashlib_split.collect();
-        let hashlib_vec_copy = hashlib_vec.clone();
-
-        println!("{}", "> Hashlib python : ".bright_yellow());
-        for line in hashlib_vec {
-            if line == ""{
-                println!();
-            }
-
-            if line == "-----END PGP MESSAGE-----" {
-                println!("{}",line.green());
-                break;
-            }
-            println!("{}",line.green());
+        let mut path_stdin_val_mut = String::new();
+        if path_stdin_val.is_empty() {
+            path_stdin_val_mut.push_str("qrcode");
+        } else {
+            path_stdin_val_mut.push_str(path_stdin_val.as_str());
         }
 
-        vec![hashlib_vec_copy[0].to_string(), hashlib_vec_copy[1].to_string()]
-
-    }
-
-    fn get_list_qrcode() {
         clear_screen!();
         let list_of_qrcode = Command::new("ls")
             .args(&[
-                 "-a", "qrcode"
+                 "-a", format!("{}",path_stdin_val_mut).as_str()
             ])
             .stdout(Stdio::piped())
             .output()
@@ -477,7 +457,7 @@ pub mod lib {
             path_name.push_str(format!("{}", chose).as_str());
         }
 
-        scan_qrcode(path_name.as_str());
+        scan_qrcode(path_name.as_str(), path_stdin_val_mut.as_str());
         
         print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
         let confirm = catch_stdin();
@@ -509,8 +489,16 @@ pub mod lib {
     }
 
 
-    fn scan_qrcode(name_of_file: &str) {
-        let qrcode_name_location = format!("qrcode/{}", name_of_file);
+    fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
+
+        let mut path_of_file_mut = String::new();
+        if path_of_file.is_empty() {
+            path_of_file_mut.push_str("qrcode");
+        } else {
+            path_of_file_mut.push_str(path_of_file);
+        }
+
+        let qrcode_name_location = format!("{}/{}", path_of_file_mut,  name_of_file);
         let zbar = Command::new("zbarimg")
             .args(&[
                   "--nodisplay", "--nodbus", "--quiet",
@@ -559,7 +547,7 @@ pub mod lib {
         if !gpg_utf8.is_empty() {
             Ok(format!("{}", gpg_utf8_vec[0]))
         } else {
-            Err(format!("> something wrong with gpg_utf8_err! : {}", gpg_utf8_err))
+            Err(format!("{}{}", "> something wrong with gpg_utf8_err gpg_decrypt() : ".bright_red(), gpg_utf8_err))
         }
     }
 
