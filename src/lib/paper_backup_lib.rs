@@ -155,11 +155,13 @@ pub mod lib {
     }
 
     pub fn diceware_generate(n_value: &str, wordlist: &str, delimiter: &str) -> Vec<String> {
-        let diceware = Command::new("diceware")
+        let diceware = Command::new("bin/diceware")
             .args(&["-d", delimiter,"-e","-n", n_value,"-l",wordlist])
             .stdout(Stdio::piped())
             .output()
-            .expect("Failed to execute diceware");
+            .expect(format!("{}{}", 
+                            "> Failed to run diceware : ".bright_red(), 
+                            "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()).as_str());
 
         let dice = String::from_utf8_lossy(&diceware.stdout);
 
