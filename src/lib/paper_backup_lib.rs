@@ -19,6 +19,7 @@ pub mod lib {
     use chrono::prelude::*;
     use cipher_crypt::Rot13;
     use base64_stream::{ FromBase64Reader, ToBase64Reader };
+    use openssl::sha::sha256;
 
     pub enum Menu {
         Help,
@@ -96,12 +97,10 @@ pub mod lib {
 
                     println!("{}", gpg_encrypt().unwrap().bright_green());
 
-                    let val_for_generate = get_secret_gpg("secret.gpg"); 
-
-                    let hash = hashlib_python();
+                    let hash = to_sha256("secret.gpg");
 
                     println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                    qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
+                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
 
                     println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
                 } else {
@@ -132,12 +131,10 @@ pub mod lib {
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
 
-                        let val_for_generate = get_secret_gpg("secret.gpg"); 
-
-                        let hash = hashlib_python();
+                        let hash = to_sha256("secret.gpg");
 
                         println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                        qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
+                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
 
                         println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
 
@@ -399,7 +396,8 @@ pub mod lib {
         Ok(io::BufReader::new(file).lines())
     }
 
-    fn hashlib_python() -> Vec<String> {
+    // no longer need it.
+    fn _hashlib_python() -> Vec<String> {
         let hashlib_python = Command::new("python3")
             .args(&[
                   "hash.py"
@@ -589,7 +587,7 @@ pub mod lib {
 
     fn print_rot13_base64_txt(val: &str) {
         let raw_txt_copy = val.clone();
-        println!("\n{}", "|".bright_green());
+        println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Rot13  : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
@@ -605,7 +603,7 @@ pub mod lib {
     
     fn print_txt_base64_rot13(val: &str) {
         let raw_txt_copy = val.clone();
-        println!("\n{}", "|".bright_green());
+        println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Text   : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
@@ -672,6 +670,47 @@ pub mod lib {
         }
     }
 
+
+    pub fn to_sha256(file: &str) -> Vec<String> {
+        
+        let get_gpg_from_file = get_secret_gpg(file); 
+        
+        let hasher = sha256(get_gpg_from_file.as_bytes());
+        let hash_value = hex::encode(hasher);
+
+        let get_gpg_from_file_split = get_gpg_from_file.split("\n");
+        let hash_vec:Vec<&str> = get_gpg_from_file_split.collect();
+
+        println!("{}{}", "> Hash sha256 : ".bright_yellow(), hash_value);
+        for line in hash_vec {
+            if line == "" {
+                println!("");
+            }
+
+            if line == "-----END PGP MESSAGE-----" {
+                println!("{}", line.green());
+                break;
+            }
+
+            println!("{}", line.green());
+        }
+
+        let hash_value_char: Vec<char> = hash_value.chars().collect();
+        let mut short_hash = String::new();
+
+        let mut y = 0;
+        while y < hash_value_char.len() {
+            short_hash.push(hash_value_char[y]);
+            if y == 22 {
+                break;
+            }
+            y += 1;
+        }
+
+        vec![short_hash, hash_value, get_gpg_from_file]
+
+    }
+    
     pub fn to_rot13(val: &str) -> String {
         Rot13::encrypt(val)
     }
