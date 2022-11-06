@@ -25,11 +25,21 @@ fn main() {
 
                 menu_option(Menu::DicewareLock(helper_catch_stdin)); 
             },
-            val if val == "--eff" => menu_option(Menu::Eff),
+            val if val == "--eff" => {
+                print!("\n{}", "> Count word : ".bright_green());
+                let count_word = catch_stdin();
+                menu_option(Menu::Eff(count_word.parse().unwrap()));
+            },
+            val if val == "--eff-lock" => {
+                print!("\n{}", "> Count word : ".bright_green());
+                let count_word = catch_stdin();
+                menu_option(Menu::EffLock(count_word.parse().unwrap()))
+            },
             val if val == "--unlock" => menu_option(Menu::Unlock),
             val if val == "--convert" => menu_option(Menu::Convert),
             val if val != "--eff" && val != "--diceware-lock" && val != "--help" 
-                && val != "--diceware" && val != "--unlock" && val != "--convert" => {
+                && val != "--diceware" && val != "--unlock" && val != "--convert"
+                && val != "eff-lock" => {
                     not_in_the_menu.push_str(&val);
                     not_in_the_menu.push(' ');
                 },

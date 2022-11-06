@@ -18,11 +18,12 @@ pub mod lib {
     use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
     use chrono::prelude::*;
     use cipher_crypt::Rot13;
-    use base64_stream::FromBase64Reader;
+    use base64_stream::{ FromBase64Reader, ToBase64Reader };
 
     pub enum Menu {
         Help,
-        Eff,
+        Eff(usize),
+        EffLock(usize),
         Diceware(String),
         DicewareLock(String),
         Notenum(String),
@@ -52,8 +53,11 @@ pub mod lib {
         println!("option: ");
         println!("       --help           :  Help command!");
         println!("       --eff            :  Generate Eff random wordlist");
+        println!("       --eff-lock       :  Generate paper backup with Eff random wordlist");
         println!("       --diceware       :  Generate passphrase using diceware crate");
-        println!("       --diceware-lock  :  Generate paper backup with --diceware\n");
+        println!("       --diceware-lock  :  Generate paper backup with --diceware");
+        println!("       --unlock         :  Unlock qrcode from directory qrcode/");
+        println!("       --convert        :  Convertion string to ?\n");
     }
 
     pub fn menu_option(menu_list: Menu) {
@@ -107,15 +111,46 @@ pub mod lib {
 
             },
             Menu::Unlock => get_list_qrcode(),
-            Menu::Eff => {
+            Menu::Eff(arg) => {
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n","Output: ".green(),  generate_eff_word());
-            }
+                println!("{}{}\n","Output: ".green(),  generate_eff_word(arg));
+            },
+            Menu::EffLock(arg) => {
+                let gen = generate_eff_word(arg);
+                let gen_copy = gen.clone();
+                println!("\neff wordlist");
+                println!("------------");
+                println!("{}{}\n","Output: ".green(), gen); 
+
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                match forward_this {
+                    x if x == "y" || x == "Y" => {
+                        
+                        store_tofile(gen_copy);
+
+                        println!("{}", gpg_encrypt().unwrap().bright_green());
+
+                        let val_for_generate = get_secret_gpg("secret.gpg"); 
+
+                        let hash = hashlib_python();
+
+                        println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                        qrcode_generate_to_file(val_for_generate.as_str(), hash[1].as_str(), hash[0].as_str());
+
+                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+
+                    },
+                    _ => {
+                        exit_this!();
+                    },
+                }
+            },
             Menu::Notenum(arg) => {
                 println!("{} {}",arg.bright_red(), "> Menu Argument not available please check help: --help".bright_yellow());
             },
-            Menu::Convert => convert_string(),
+            Menu::Convert => main_convert(),
         }
     }
 
@@ -136,12 +171,12 @@ pub mod lib {
     }
 
     // generate from eff-wordlist crates
-    pub fn generate_eff_word() -> String {
+    pub fn generate_eff_word(val: usize) -> String {
         let mut words: Vec<String> = Vec::new();
 
         let mut words_string = String::new();
 
-        while words.len() < 20 {
+        while words.len() < val {
             let word = eff_wordlist::large::random_word();
             words.push(word.to_string());
             words_string.push_str(&word.to_string());
@@ -528,28 +563,111 @@ pub mod lib {
         }
     }
 
-    // Need serialize base64 to string from bytes
-    // Maybe Serde will d
-    fn convert_string() {
-        print!("\n{}","> Input string: ".bright_green());
-        let raw_txt = catch_stdin();
-        let raw_txt_copy = raw_txt.clone();
-        let rot13_txt = from_rot13(raw_txt.as_str());
+    fn main_convert() {
+        println!("\n{}", "1. Txt-Base64-Rot13?".cyan());
+        println!("{}", "2. Rot13-Base64-Txt?".cyan());
+        print!("\n{}", "Chose Option: ".bright_green());
+        let option_string = catch_stdin();
 
-        println!("\n{}", "|".bright_blue());
-        println!("{}", "|".bright_blue());
-        println!("{}{}", "--> Text  : ".bright_blue(), raw_txt_copy);
-        println!("{}", "|".bright_blue());
-        println!("{}", "|".bright_blue());
-        println!("{}{}", "--> Rot13 : ".bright_blue(), rot13_txt.bright_yellow());
+        match option_string {
+            val if val == "1" => {
+                print!("\n{}","> Input string: ".cyan());
+                let input1 = catch_stdin();
+                print_txt_base64_rot13(input1.as_str())
+            },
+            val if val == "2" => {
+                print!("\n{}","> Input string: ".cyan());
+                let input2 = catch_stdin();
+                print_rot13_base64_txt(input2.as_str())
+            },
+            _ => println!("{}", "> Option not available!".bright_red())
+        }
 
-        let mut reader = FromBase64Reader::new(Cursor::new(rot13_txt.as_bytes().to_vec()));
-        let mut base64 = String::new();
-        reader.read_to_string(&mut base64).unwrap();
-        println!("{}", "|".bright_blue());
-        println!("{}", "|".bright_blue());
-        println!("{}\n{}","--> Base64".bright_blue(), base64.bright_green());
+    }
 
+    fn print_rot13_base64_txt(val: &str) {
+        let raw_txt_copy = val.clone();
+        println!("\n{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Rot13  : ".bright_green(), raw_txt_copy);
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Base64 : ".bright_green(), from_rot13(val).bright_yellow());
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}","--> Txt     : ".bright_green(), 
+                 from_rot13_base64_txt(val)
+                 .unwrap()
+                 .bright_green());
+    }
+    
+    fn print_txt_base64_rot13(val: &str) {
+        let raw_txt_copy = val.clone();
+        println!("\n{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Text   : ".bright_green(), raw_txt_copy);
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Base64 : ".bright_green(), to_base64(val).unwrap().bright_yellow());
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}","--> Rot13   : ".bright_green(), 
+                 to_txt_base64_rot13(val)
+                 .unwrap()
+                 .bright_green());
+    }
+
+
+    pub fn to_txt_base64_rot13(val: &str) -> Result<String, String> {
+        let mut reader = ToBase64Reader::new(Cursor::new(val.as_bytes().to_vec()));
+        let mut from_base64 = String::new();
+        reader.read_to_string(&mut from_base64).unwrap();
+
+        let from_rot13 = from_rot13(from_base64.as_str());
+        match from_rot13 {
+            val if !val.is_empty() => Ok(val),
+            _ => Err("Error cant generate strin from rot13!.".to_string())
+        }
+    }
+
+
+    pub fn from_rot13_base64_txt(val: &str) -> Result<String, String> {
+        let from_rot13 = from_rot13(val);
+        let mut reader = FromBase64Reader::new(Cursor::new(from_rot13.as_bytes().to_vec()));
+        let mut from_base64 = String::new();
+        reader.read_to_string(&mut from_base64).unwrap();
+
+        match from_base64 {
+            val if !val.is_empty() => Ok(val),
+            _ => Err("Error cant generate strin from rot13!.".to_string())
+        }
+    }
+
+    pub fn to_base64(val: &str) -> Result<String, String> {
+        let mut reader = ToBase64Reader::new(Cursor::new(val));
+        let mut to_base64 = String::new();
+        reader.read_to_string(&mut to_base64).unwrap();
+
+        let to_base64_copy = to_base64.clone();
+
+        match to_base64_copy {
+            y if !y.is_empty() => Ok(to_base64),
+            _ => Err("Error cant generate base64 from string!".to_string())
+        }
+    }
+
+    pub fn from_base64(val: &str) -> Result<String, String> {
+        let mut reader = FromBase64Reader::new(Cursor::new(val));
+        let mut from_base64 = String::new();
+        reader.read_to_string(&mut from_base64).unwrap();
+
+        let from_base64_copy = from_base64.clone();
+
+        if !from_base64_copy.is_empty() {
+            Ok(from_base64)
+        } else {
+            Err("Error cant generate string from base64!".to_string())
+        }
     }
 
     pub fn to_rot13(val: &str) -> String {
@@ -565,6 +683,34 @@ pub mod lib {
 #[cfg(test)]
 mod tests {
     use crate::lib::*;
+
+    #[test]
+    fn test_to_txt_base64_rot13() {
+        let txt = "HELLO!";
+        let real = to_txt_base64_rot13(txt).unwrap();
+        assert_eq!("FRIZGR8u", real);
+    }
+    
+    #[test]
+    fn test_from_rot13_base64_txt() {
+        let txt = "FRIZGR8u";
+        let real = from_rot13_base64_txt(txt).unwrap();
+        assert_eq!("HELLO!", real);
+    }
+
+    #[test]
+    fn test_to_base64() {
+        let base64_txt = "HELLO!";
+        let real = to_base64(base64_txt).unwrap();
+        assert_eq!("SEVMTE8h", real);
+    }
+
+    #[test]
+    fn test_from_base64() {
+        let base64_txt = "SEVMTE8h";
+        let real = from_base64(base64_txt).unwrap();
+        assert_eq!("HELLO!", real);
+    }
 
     #[test]
     fn test_from_rot13() {
@@ -594,7 +740,7 @@ mod tests {
 
     #[test]
     fn test_generate_eff_word() {
-        let eff:String = generate_eff_word();
+        let eff:String = generate_eff_word(1);
         let n = stdin_check_numeric(eff.as_str());
         assert_eq!(n, false);
     }
