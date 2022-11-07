@@ -17,7 +17,7 @@ pub mod lib {
     use qr2term::*;
     use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
     use chrono::prelude::*;
-    use cipher_crypt::Rot13;
+    use cipher_crypt::{ Rot13, Cipher, Vigenere };
     use base64_stream::{ FromBase64Reader, ToBase64Reader };
     use openssl::sha::sha256;
 
@@ -554,6 +554,8 @@ pub mod lib {
     fn main_convert() {
         println!("\n{}", "1. Txt-Base64-Rot13?".cyan());
         println!("{}", "2. Rot13-Base64-Txt?".cyan());
+        println!("{}", "3. Txt-vigenere?".cyan());
+        println!("{}", "4. vigenere_Txt?".cyan());
         print!("\n{}", "Chose Option: ".bright_green());
         let option_string = catch_stdin();
 
@@ -567,6 +569,20 @@ pub mod lib {
                 print!("\n{}","> Input string: ".cyan());
                 let input2 = catch_stdin();
                 print_rot13_base64_txt(input2.as_str())
+            },
+            val if val == "3" => {
+                print!("\n{}","> Input String: ".cyan());
+                let input3 = catch_stdin();
+                print!("\n{}","> key String: ".cyan());
+                let input4 = catch_stdin();
+                print_txt_vigenere(input3.as_str(), input4.as_str());
+            },
+            val if val == "4" => {
+                print!("\n{}","> Input String: ".cyan());
+                let a = catch_stdin();
+                print!("\n{}","> key String: ".cyan());
+                let b = catch_stdin();
+                print_vigenere_txt(a.as_str(), b.as_str());
             },
             _ => println!("{}", "> Option not available!".bright_red())
         }
@@ -605,6 +621,25 @@ pub mod lib {
                  .bright_green());
     }
 
+    fn print_txt_vigenere(val: &str, key: &str) {
+        let raw_txt_copy = val.clone();
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Text     : ".bright_green(), raw_txt_copy);
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> vigenere : ".bright_green(), to_vigenere(val, key).bright_yellow());
+    }
+
+    fn print_vigenere_txt(val: &str, key: &str) {
+        let raw_txt_copy = val.clone();
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Vigenere   : ".bright_green(), raw_txt_copy);
+        println!("{}", "|".bright_green());
+        println!("{}", "|".bright_green());
+        println!("{}{}", "--> Text       : ".bright_green(), from_vigenere(val, key).bright_yellow());
+    }
 
     pub fn to_txt_base64_rot13(val: &str) -> Result<String, String> {
         let mut reader = ToBase64Reader::new(Cursor::new(val.as_bytes().to_vec()));
@@ -698,7 +733,17 @@ pub mod lib {
         vec![short_hash, hash_value, get_gpg_from_file]
 
     }
+
+    pub fn to_vigenere(val: &str, key: &str) -> String {
+        let key_vigenere = Vigenere::new(String::from(key));
+        key_vigenere.encrypt(val).unwrap()
+    }
     
+    pub fn from_vigenere(val: &str, key: &str) -> String {
+        let key_vigenere = Vigenere::new(String::from(key));
+        key_vigenere.decrypt(val).unwrap()
+    }
+
     pub fn to_rot13(val: &str) -> String {
         Rot13::encrypt(val)
     }
@@ -712,6 +757,20 @@ pub mod lib {
 #[cfg(test)]
 mod tests {
     use crate::lib::*;
+
+    #[test]
+    fn test_to_viginere() {
+        let key = "bishon";
+        let value ="MESSAGE";
+        assert_eq!("NMKZOTF", to_vigenere(value, key));
+    }
+    
+    #[test]
+    fn test_from_viginere() {
+        let key = "bishon";
+        let value ="NMKZOTF";
+        assert_eq!("MESSAGE", from_vigenere(value, key));
+    }
 
     #[test]
     fn test_to_txt_base64_rot13() {
