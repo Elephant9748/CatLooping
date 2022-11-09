@@ -6,7 +6,8 @@
 ```
 git clone https://github.com/BigOrt/CatLooping.git paper_backup && cd paper_backup && mkdir -p qrcode 
 ```
-<p> qrcode directory: qrcode/ </p>
+qrcode directory: qrcode/
+
 ```
 cargo build
 cargo run -- --help
