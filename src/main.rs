@@ -35,14 +35,20 @@ fn main() {
                 let count_word = catch_stdin();
                 menu_option(Menu::EffLock(count_word.parse().unwrap()))
             },
+            val if val == "--mnemonic" => {
+
+               let menu = mnemonic_menu_list();
+                menu_option(Menu::MnemonicGen(menu[0].trim().parse().unwrap(), menu[1].to_string()));
+
+            },
             val if val == "--try" => {
-                println!("Result: {}", to_vigenere("MESSAGE", "bishon"));
+                print!("--try menu option.");
             },
             val if val == "--unlock" => menu_option(Menu::Unlock),
             val if val == "--convert" => menu_option(Menu::Convert),
             val if val != "--eff" && val != "--diceware-lock" && val != "--help" 
                 && val != "--diceware" && val != "--unlock" && val != "--convert"
-                && val != "--eff-lock" && val != "--try" => {
+                && val != "--eff-lock" && val != "--try" && val != "--mnemonic" => {
                     not_in_the_menu.push_str(&val);
                     not_in_the_menu.push(' ');
                 },
