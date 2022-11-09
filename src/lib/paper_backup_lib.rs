@@ -32,6 +32,7 @@ pub mod lib {
         MnemonicGen(usize, String),
         MnemonicGenLock(usize, String),
         LockString(String),
+        QrOnly(String),
         Unlock,
         Convert,
     }
@@ -65,6 +66,7 @@ pub mod lib {
         println!("       --mnemonic-lock  :  Generate qrcode paper backup using tiny-bip39 crate");
         println!("       --unlock         :  Unlock qrcode from directory qrcode/");
         println!("       --lock-string    :  Generate qrcode paper backup from string input");
+        println!("       --qrcode-no-pgp  :  Generate qrcode only no pgp");
         println!("       --convert        :  Convertion string to ?\n");
     }
 
@@ -290,6 +292,22 @@ pub mod lib {
                         exit_this!();
                     },
                 }
+            },
+            Menu::QrOnly(arg) => {
+
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                match forward_this {
+                    x if x == "y" || x == "Y" => {
+
+                        qrcode_generate_to_file(arg.as_str(),"raw-text-0","raw-text-1");
+
+                    },
+                    _ => {
+                        exit_this!();
+                    },
+                }
+                
             },
         }
     }

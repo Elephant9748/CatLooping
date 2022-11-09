@@ -52,6 +52,12 @@ fn main() {
                 let input_string_type = catch_stdin();
                 menu_option(Menu::LockString(input_string_type));
             },
+            val if val == "--qrcode-no-pgp" => {
+                print!("\n{}", "> Input string: ".bright_red());
+                let raw_string = catch_stdin();
+
+                menu_option(Menu::QrOnly(raw_string));
+            },
             val if val == "--try" => {
                 print!("--try menu option.");
             },
