@@ -41,6 +41,17 @@ fn main() {
                 menu_option(Menu::MnemonicGen(menu[0].trim().parse().unwrap(), menu[1].to_string()));
 
             },
+            val if val == "--mnemonic-lock" => {
+
+               let menu = mnemonic_menu_list();
+                menu_option(Menu::MnemonicGenLock(menu[0].trim().parse().unwrap(), menu[1].to_string()));
+
+            },
+            val if val == "--lock-string" => {
+                print!("\n{}", "> Type word wants to encrypt: ".bright_green());
+                let input_string_type = catch_stdin();
+                menu_option(Menu::LockString(input_string_type));
+            },
             val if val == "--try" => {
                 print!("--try menu option.");
             },
@@ -48,7 +59,8 @@ fn main() {
             val if val == "--convert" => menu_option(Menu::Convert),
             val if val != "--eff" && val != "--diceware-lock" && val != "--help" 
                 && val != "--diceware" && val != "--unlock" && val != "--convert"
-                && val != "--eff-lock" && val != "--try" && val != "--mnemonic" => {
+                && val != "--eff-lock" && val != "--try" && val != "--mnemonic"
+                && val != "--mnemonic-lock" && val != "--lock-string" => {
                     not_in_the_menu.push_str(&val);
                     not_in_the_menu.push(' ');
                 },

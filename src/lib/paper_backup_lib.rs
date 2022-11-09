@@ -30,6 +30,8 @@ pub mod lib {
         DicewareLock(String),
         Notenum(String),
         MnemonicGen(usize, String),
+        MnemonicGenLock(usize, String),
+        LockString(String),
         Unlock,
         Convert,
     }
@@ -58,9 +60,11 @@ pub mod lib {
         println!("       --eff            :  Generate Eff random wordlist");
         println!("       --eff-lock       :  Generate paper backup with Eff random wordlist");
         println!("       --diceware       :  Generate passphrase using diceware crate");
-        println!("       --diceware-lock  :  Generate paper backup with --diceware");
+        println!("       --diceware-lock  :  Generate qrcoode paper backup with --diceware");
         println!("       --mnemonic       :  Generate passphrase using tiny-bip39 crate");
+        println!("       --mnemonic-lock  :  Generate qrcode paper backup using tiny-bip39 crate");
         println!("       --unlock         :  Unlock qrcode from directory qrcode/");
+        println!("       --lock-string    :  Generate qrcode paper backup from string input");
         println!("       --convert        :  Convertion string to ?\n");
     }
 
@@ -235,6 +239,57 @@ pub mod lib {
             Menu::MnemonicGen(arg1, arg2) => {
                 let out = generate_mnemonic_word(arg1, arg2.as_str());
                 println!("\n{}{}", "> Phrase: ".bright_green(), out.bright_cyan());
+            },
+            Menu::MnemonicGenLock(arg1, arg2) => {
+                let mnemoniclock_val = generate_mnemonic_word(arg1, arg2.as_str());
+                let mnemoniclock_val_copy = mnemoniclock_val.clone();
+                println!("\n{}{}", "> Phrase: ".bright_green(), mnemoniclock_val.bright_cyan());
+                
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                match forward_this {
+                    x if x == "y" || x == "Y" => {
+                        
+                        store_tofile(mnemoniclock_val_copy);
+
+                        println!("{}", gpg_encrypt().unwrap().bright_green());
+
+                        let hash = to_sha256("secret.gpg");
+
+                        println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+
+                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+
+                    },
+                    _ => {
+                        exit_this!();
+                    },
+                }
+            },
+            Menu::LockString(arg) => {
+                
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                match forward_this {
+                    x if x == "y" || x == "Y" => {
+                        
+                        store_tofile(arg);
+
+                        println!("{}", gpg_encrypt().unwrap().bright_green());
+
+                        let hash = to_sha256("secret.gpg");
+
+                        println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+
+                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+
+                    },
+                    _ => {
+                        exit_this!();
+                    },
+                }
             },
         }
     }
