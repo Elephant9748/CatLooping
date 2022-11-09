@@ -4,8 +4,9 @@
 
 **how to get**
 ```
-git clone https://github.com/BigOrt/CatLooping.git && cd CatLooping
+git clone https://github.com/BigOrt/CatLooping.git paper_backup && cd paper_backup && mkdir -p qrcode 
 ```
+<p> qrcode directory: qrcode/ </p>
 ```
 cargo build
 cargo run -- --help
