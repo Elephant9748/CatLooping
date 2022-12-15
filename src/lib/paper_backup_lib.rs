@@ -1,26 +1,23 @@
 pub mod lib {
 
+    use base64_stream::{FromBase64Reader, ToBase64Reader};
+    use bip39::{Language, Mnemonic, MnemonicType};
+    use chrono::prelude::*;
+    use cipher_crypt::{Cipher, Rot13, Vigenere};
     use colored::Colorize;
-    use std::{
-            process::{
-                Command,
-                Stdio
-            },
-            io::{ Write, self, BufRead, Cursor, Read },
-            fs::File,
-            fs::OpenOptions,
-            path::Path,
-            thread::sleep,
-            time::Duration,
-        };
+    use openssl::sha::sha256;
     use progress_bar::*;
     use qr2term::*;
-    use qrcode_png::{QrCode, QrCodeEcc, Color as ColorQr};
-    use chrono::prelude::*;
-    use cipher_crypt::{ Rot13, Cipher, Vigenere };
-    use base64_stream::{ FromBase64Reader, ToBase64Reader };
-    use openssl::sha::sha256;
-    use bip39::{ Mnemonic, MnemonicType, Language };
+    use qrcode_png::{Color as ColorQr, QrCode, QrCodeEcc};
+    use std::{
+        fs::File,
+        fs::OpenOptions,
+        io::{self, BufRead, Cursor, Read, Write},
+        path::Path,
+        process::{Command, Stdio},
+        thread::sleep,
+        time::Duration,
+    };
 
     pub enum Menu {
         Help,
@@ -40,12 +37,93 @@ pub mod lib {
     macro_rules! clear_screen {
         () => {
             std::process::Command::new("clear").status().unwrap();
-        }
+        };
     }
 
     macro_rules! exit_this {
         () => {
             std::process::exit(0);
+        };
+    }
+
+    #[derive(Debug)]
+    pub struct Dice<'dice> {
+        n_value: Option<u32>,
+        wordlist: Option<&'dice str>,
+        delimiter: Option<&'dice str>,
+    }
+
+    impl<'dice> Dice<'dice> {
+        pub fn new(n_value: u32, wordlist: &'dice str, delimiter: &'dice str) -> Self {
+            Self {
+                n_value: Some(n_value),
+                wordlist: Some(wordlist),
+                delimiter: Some(delimiter),
+
+            }
+        }
+    }
+
+    pub trait Diceware {
+        fn generate_wordlist(&self) -> Vec<String>;
+    }
+    
+    pub trait DiceVec {
+        fn find_entropy(&self) -> Option<&str>;
+        fn find_passphrase(&self) -> Option<&str>;
+    }
+
+    impl DiceVec for Vec<String> {
+        fn find_entropy(&self) -> Option<&str> {
+            if self.is_empty() {
+                None
+            } else {
+                Some(&self[1])
+            }
+        }
+        fn find_passphrase(&self) -> Option<&str> {
+            if self.is_empty() {
+                None
+            } else {
+                Some(&self[0])
+            }
+        }
+    }
+
+    impl<'dice> Diceware for Dice<'dice> {
+        fn generate_wordlist(&self) -> Vec<String> {
+            let diceware = Command::new("bin/diceware")
+                .args(&[
+                    "-d",
+                    self.delimiter.unwrap(),
+                    "-e",
+                    "-n",
+                    self.n_value.unwrap().to_string().as_str(),
+                    "-l",
+                    self.wordlist.unwrap(),
+                ])
+                .stdout(Stdio::piped())
+                .output()
+                .expect(
+                    format!(
+                        "{}{}",
+                        "> Failed to run diceware : ".bright_red(),
+                        "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()
+                    )
+                    .as_str(),
+                );
+
+            let dice = String::from_utf8_lossy(&diceware.stdout);
+
+            let dice_split = dice.split("\n");
+
+            let dice_vec: Vec<&str> = dice_split.collect();
+
+            dice_vec
+                .into_iter()
+                .filter(|v| v.to_string() != "")
+                .map(|x| x.to_string())
+                .collect()
         }
     }
 
@@ -70,13 +148,17 @@ pub mod lib {
         println!("       --convert        :  Convertion string to ?\n");
     }
 
-
     pub fn mnemonic_menu_list() -> Vec<String> {
-
         let mut menu_result: Vec<String> = Vec::new();
 
-        println!("{}", "\n> Word count must be 12, 15, 18, 21, 24 !".bright_red());
-        println!("{}", "-----------------------------------------".bright_yellow());
+        println!(
+            "{}",
+            "\n> Word count must be 12, 15, 18, 21, 24 !".bright_red()
+        );
+        println!(
+            "{}",
+            "-----------------------------------------".bright_yellow()
+        );
         println!("{}", "1. Words12 ".bright_yellow());
         println!("{}", "2. Words15 ".bright_yellow());
         println!("{}", "3. Words18 ".bright_yellow());
@@ -88,31 +170,28 @@ pub mod lib {
         let count = catch_stdin();
 
         match count.trim().parse() {
-            Ok(val) => {
-                match val {
-                    1 => {
-                        num = 12;
-                    },
-                    2 => {
-                        num = 15;
-                    },
-                    3 => {
-                        num = 18;
-                    },
-                    4 => {
-                        num = 21;
-                    },
-                    5 => {
-                        num = 24;
-                    },
-                    _ => println!("{}", "unmatch val : ".bright_red()),
+            Ok(val) => match val {
+                1 => {
+                    num = 12;
                 }
+                2 => {
+                    num = 15;
+                }
+                3 => {
+                    num = 18;
+                }
+                4 => {
+                    num = 21;
+                }
+                5 => {
+                    num = 24;
+                }
+                _ => println!("{}", "unmatch val : ".bright_red()),
             },
             Err(err) => println!("{}{}", "unmatch count.trim().parse() !".bright_red(), err),
         }
 
         menu_result.push(num.to_string());
-
 
         println!("{}", "\n> Language ".bright_cyan());
         println!("{}", "-----------".bright_cyan());
@@ -130,18 +209,32 @@ pub mod lib {
         let mut lang_option = String::from("");
 
         match lang.trim().parse() {
-            Ok(val) => {
-                match val {
-                    1 => { lang_option.push_str("English"); },
-                    2 => { lang_option.push_str("ChineseSimplified"); },
-                    3 => { lang_option.push_str("ChineseTraditional"); },
-                    4 => { lang_option.push_str("French"); },
-                    5 => { lang_option.push_str("Italian"); },
-                    6 => { lang_option.push_str("Japanese"); },
-                    7 => { lang_option.push_str("Korean"); },
-                    8 => { lang_option.push_str("Spanish"); },
-                    _ => println!("{}", "unmatch val lang".bright_red()),
+            Ok(val) => match val {
+                1 => {
+                    lang_option.push_str("English");
                 }
+                2 => {
+                    lang_option.push_str("ChineseSimplified");
+                }
+                3 => {
+                    lang_option.push_str("ChineseTraditional");
+                }
+                4 => {
+                    lang_option.push_str("French");
+                }
+                5 => {
+                    lang_option.push_str("Italian");
+                }
+                6 => {
+                    lang_option.push_str("Japanese");
+                }
+                7 => {
+                    lang_option.push_str("Korean");
+                }
+                8 => {
+                    lang_option.push_str("Spanish");
+                }
+                _ => println!("{}", "unmatch val lang".bright_red()),
             },
             Err(err) => println!("{}{}", "unmatch lang.trim().parse()".bright_red(), err),
         }
@@ -153,37 +246,44 @@ pub mod lib {
 
     pub fn menu_option(menu_list: Menu) {
         match menu_list {
-            Menu::Help =>  get_help(),
+            Menu::Help => get_help(),
             Menu::Diceware(arg) => {
-                let passphrase = diceware_generate(arg.as_str(),"minilock","-");
+                let dice = Dice::new(arg.parse::<u32>().unwrap(), "minilock", "-");
+                let diceware = dice.generate_wordlist();
+
+                println!("{:?}", dice);
 
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
-                println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
-                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
-                         .color("white")
-                         .on_color("black")
-                         .italic()
+                println!("{}{}", "entropy   : ".cyan(), diceware.find_entropy().unwrap());
+                println!(
+                    "{}{}\n",
+                    "passphrase: ".green(),
+                    diceware.find_passphrase().unwrap().color("white").on_color("black").italic()
                 );
-
-            },
+            }
             Menu::DicewareLock(arg) => {
-                let passphrase = diceware_generate(arg.as_str(),"minilock","-");
-                let passphrase_copy = passphrase.clone();
-
+                let phrase = Dice::new(arg.parse::<u32>().unwrap(), "minilock", "-");
+                let passphrase = phrase.generate_wordlist();
+                
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
-                println!("{}{}", "entropy   : ".cyan(), diceware_generate(arg.as_str(),"minilock","-")[1]);
-                println!("{}{}\n", "passphrase: ".green(), passphrase[0]
-                         .color("white")
-                         .on_color("black")
-                         .italic()
+                println!(
+                    "{}{}",
+                    "entropy   : ".cyan(),
+                    diceware_generate(arg.as_str(), "minilock", "-")[1]
+                );
+                println!(
+                    "{}{}\n",
+                    "passphrase: ".green(),
+                    passphrase.find_passphrase().unwrap().color("white").on_color("black").italic()
                 );
 
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 if forward_this == "y" || forward_this == "Y" {
-                    store_tofile(passphrase_copy[0].to_string());
+                    println!("{:?}", passphrase.find_passphrase().unwrap());
+                    store_tofile(passphrase.find_passphrase().unwrap().to_string());
 
                     println!("{}", gpg_encrypt().unwrap().bright_green());
 
@@ -192,31 +292,33 @@ pub mod lib {
                     println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
                     qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
 
-                    println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
+                    println!(
+                        "{}",
+                        shred_helper_files(["secret.gpg", "frost"].to_vec())
+                            .unwrap()
+                            .bright_green()
+                    );
                 } else {
                     exit_this!();
                 }
-
-
-            },
+            }
             Menu::Unlock => get_list_qrcode(),
             Menu::Eff(arg) => {
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n","Output: ".green(),  generate_eff_word(arg));
-            },
+                println!("{}{}\n", "Output: ".green(), generate_eff_word(arg));
+            }
             Menu::EffLock(arg) => {
                 let gen = generate_eff_word(arg);
                 let gen_copy = gen.clone();
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n","Output: ".green(), gen); 
+                println!("{}{}\n", "Output: ".green(), gen);
 
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        
                         store_tofile(gen_copy);
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
@@ -224,34 +326,49 @@ pub mod lib {
                         let hash = to_sha256("secret.gpg");
 
                         println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                        qrcode_generate_to_file(
+                            hash[2].as_str(),
+                            hash[1].as_str(),
+                            hash[0].as_str(),
+                        );
 
-                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
-
-                    },
+                        println!(
+                            "{}",
+                            shred_helper_files(["secret.gpg", "frost"].to_vec())
+                                .unwrap()
+                                .bright_green()
+                        );
+                    }
                     _ => {
                         exit_this!();
-                    },
+                    }
                 }
-            },
+            }
             Menu::Notenum(arg) => {
-                println!("{} {}",arg.bright_red(), "> Menu Argument not available please check help: --help".bright_yellow());
-            },
+                println!(
+                    "{} {}",
+                    arg.bright_red(),
+                    "> Menu Argument not available please check help: --help".bright_yellow()
+                );
+            }
             Menu::Convert => main_convert(),
             Menu::MnemonicGen(arg1, arg2) => {
                 let out = generate_mnemonic_word(arg1, arg2.as_str());
                 println!("\n{}{}", "> Phrase: ".bright_green(), out.bright_cyan());
-            },
+            }
             Menu::MnemonicGenLock(arg1, arg2) => {
                 let mnemoniclock_val = generate_mnemonic_word(arg1, arg2.as_str());
                 let mnemoniclock_val_copy = mnemoniclock_val.clone();
-                println!("\n{}{}", "> Phrase: ".bright_green(), mnemoniclock_val.bright_cyan());
-                
+                println!(
+                    "\n{}{}",
+                    "> Phrase: ".bright_green(),
+                    mnemoniclock_val.bright_cyan()
+                );
+
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        
                         store_tofile(mnemoniclock_val_copy);
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
@@ -259,23 +376,29 @@ pub mod lib {
                         let hash = to_sha256("secret.gpg");
 
                         println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                        qrcode_generate_to_file(
+                            hash[2].as_str(),
+                            hash[1].as_str(),
+                            hash[0].as_str(),
+                        );
 
-                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
-
-                    },
+                        println!(
+                            "{}",
+                            shred_helper_files(["secret.gpg", "frost"].to_vec())
+                                .unwrap()
+                                .bright_green()
+                        );
+                    }
                     _ => {
                         exit_this!();
-                    },
+                    }
                 }
-            },
+            }
             Menu::LockString(arg) => {
-                
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        
                         store_tofile(arg);
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
@@ -283,43 +406,52 @@ pub mod lib {
                         let hash = to_sha256("secret.gpg");
 
                         println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                        qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                        qrcode_generate_to_file(
+                            hash[2].as_str(),
+                            hash[1].as_str(),
+                            hash[0].as_str(),
+                        );
 
-                        println!("{}", shred_helper_files(["secret.gpg","frost"].to_vec()).unwrap().bright_green());
-
-                    },
+                        println!(
+                            "{}",
+                            shred_helper_files(["secret.gpg", "frost"].to_vec())
+                                .unwrap()
+                                .bright_green()
+                        );
+                    }
                     _ => {
                         exit_this!();
-                    },
+                    }
                 }
-            },
+            }
             Menu::QrOnly(arg) => {
-
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-
-                        qrcode_generate_to_file(arg.as_str(),"raw-text-0","raw-text-1");
-
-                    },
+                        qrcode_generate_to_file(arg.as_str(), "raw-text-0", "raw-text-1");
+                    }
                     _ => {
                         exit_this!();
-                    },
+                    }
                 }
-                
-            },
+            }
         }
     }
 
     pub fn diceware_generate(n_value: &str, wordlist: &str, delimiter: &str) -> Vec<String> {
         let diceware = Command::new("bin/diceware")
-            .args(&["-d", delimiter,"-e","-n", n_value,"-l",wordlist])
+            .args(&["-d", delimiter, "-e", "-n", n_value, "-l", wordlist])
             .stdout(Stdio::piped())
             .output()
-            .expect(format!("{}{}", 
-                            "> Failed to run diceware : ".bright_red(), 
-                            "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()).as_str());
+            .expect(
+                format!(
+                    "{}{}",
+                    "> Failed to run diceware : ".bright_red(),
+                    "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()
+                )
+                .as_str(),
+            );
 
         let dice = String::from_utf8_lossy(&diceware.stdout);
 
@@ -327,7 +459,11 @@ pub mod lib {
 
         let dice_vec: Vec<&str> = dice_split.collect();
 
-        dice_vec.into_iter().filter(|v| v.to_string() != "").map(|x| x.to_string()).collect()
+        dice_vec
+            .into_iter()
+            .filter(|v| v.to_string() != "")
+            .map(|x| x.to_string())
+            .collect()
     }
 
     // generate from eff-wordlist crates
@@ -345,26 +481,37 @@ pub mod lib {
 
         words_string.pop();
 
-
         words_string
     }
-    
+
     pub fn catch_stdin() -> String {
         let mut input = String::new();
 
         let _ = io::stdout().flush().unwrap();
 
-        io::stdin().read_line(&mut input).expect("Something wrong with stdin().read_line() !");
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Something wrong with stdin().read_line() !");
 
         input.trim().to_string()
     }
 
-
-    pub fn gpg_encrypt() -> Result<String, String> { 
+    pub fn gpg_encrypt() -> Result<String, String> {
         let gpg = Command::new("gpg")
             .args(&[
-                  "-o","secret.gpg","--symmetric","--s2k-mode","3","--s2k-count","65011712","--s2k-digest-algo",
-                  "SHA512","--cipher-algo","AES256","--armor", "frost"
+                "-o",
+                "secret.gpg",
+                "--symmetric",
+                "--s2k-mode",
+                "3",
+                "--s2k-count",
+                "65011712",
+                "--s2k-digest-algo",
+                "SHA512",
+                "--cipher-algo",
+                "AES256",
+                "--armor",
+                "frost",
             ])
             .stdout(Stdio::piped())
             .output()
@@ -376,12 +523,14 @@ pub mod lib {
         if gpg_utf8.is_empty() {
             Ok(format!("> gpg_encrypt successfully."))
         } else {
-            Err(format!("> something wrong with gpg_utf8_err! : {}", gpg_utf8_err))
+            Err(format!(
+                "> something wrong with gpg_utf8_err! : {}",
+                gpg_utf8_err
+            ))
         }
     }
 
     pub fn store_tofile(store_val: String) {
-
         let store_val_copy = store_val.clone();
 
         validate_passphrase(store_val_copy);
@@ -404,7 +553,10 @@ pub mod lib {
         clear_screen!();
         loop {
             // some kind a time sleep
-            println!("{}", "> type '--show' to look passphrase previously".bright_yellow());
+            println!(
+                "{}",
+                "> type '--show' to look passphrase previously".bright_yellow()
+            );
             print!("{}", "> please validate passphrase : ".bright_blue());
             let check = catch_stdin();
             clear_screen!();
@@ -423,28 +575,36 @@ pub mod lib {
 
             if check == "--show" {
                 clear_screen!();
-                println!("{}{}", "> what store passphrase: ".bright_green(), val.yellow());
+                println!(
+                    "{}{}",
+                    "> what store passphrase: ".bright_green(),
+                    val.yellow()
+                );
                 // some kind a time sleep
             }
         }
         val.to_string()
     }
-    
-    pub fn shred_helper_files(val: Vec<&str>) -> Result<String, String> { 
 
-        let mut shred_args:Vec<&str> = Vec::new();
+    pub fn shred_helper_files(val: Vec<&str>) -> Result<String, String> {
+        let mut shred_args: Vec<&str> = Vec::new();
         shred_args.push("-vuzn");
         shred_args.push("20");
-        
+
         let mut what_file_shreding = String::new();
         for v in val {
             what_file_shreding.push_str(v);
             what_file_shreding.push_str(", ");
             shred_args.push(v);
         }
-        
-        println!("{}{}{}", "> Shreding ".magenta(), what_file_shreding.magenta(), " ,20: ".bright_yellow());
-        
+
+        println!(
+            "{}{}{}",
+            "> Shreding ".magenta(),
+            what_file_shreding.magenta(),
+            " ,20: ".bright_yellow()
+        );
+
         let shred = Command::new("shred")
             .args(&shred_args)
             .stdout(Stdio::piped())
@@ -453,11 +613,10 @@ pub mod lib {
 
         let shred_utf8 = String::from_utf8_lossy(&shred.stdout);
         let shred_utf8_err = String::from_utf8_lossy(&shred.stderr);
-        
+
         let shred_copy_split = shred_utf8_err.split("\n");
         let shred_copy_collect: Vec<&str> = shred_copy_split.collect();
         process_bar(shred_copy_collect.len());
-
 
         if shred_utf8.is_empty() {
             Ok(format!("{}", "> shred successfully. ".green()))
@@ -467,25 +626,24 @@ pub mod lib {
     }
 
     pub fn process_bar(val: usize) {
-       init_progress_bar(val);
-       set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
+        init_progress_bar(val);
+        set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
 
-       let mut i = 0;
-       while i < val {
-           sleep(Duration::from_millis(15));
-           inc_progress_bar();
-           i += 1;
-       }
-       finalize_progress_bar();
+        let mut i = 0;
+        while i < val {
+            sleep(Duration::from_millis(15));
+            inc_progress_bar();
+            i += 1;
+        }
+        finalize_progress_bar();
     }
 
     // Need better generate qrcode
     pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str) {
-
         let utc: DateTime<Utc> = Utc::now();
         let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
         print!("{}", "> Name your qrcode file: ".bright_yellow());
-        
+
         let name_png = catch_stdin();
         let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
         let name_png_print_copy = name_png_print.clone();
@@ -493,36 +651,57 @@ pub mod lib {
 
         qrcode.margin(50);
         qrcode.zoom(10);
-        
+
         let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
-        std::fs::write(name_png_print, buffer)
-            .expect(format!("{}", ">Something wrong with qrcode_generate write file".red()).as_str());
+        std::fs::write(name_png_print, buffer).expect(
+            format!(
+                "{}",
+                ">Something wrong with qrcode_generate write file".red()
+            )
+            .as_str(),
+        );
 
         print_qr(val).unwrap();
-        println!("{}{}", "> qrcode location : ".green(), name_png_print_copy.magenta());
+        println!(
+            "{}{}",
+            "> qrcode location : ".green(),
+            name_png_print_copy.magenta()
+        );
 
-        let status_short = qrcode_with_short_hash(
-            val2, 
-            utc_to_png.as_str(), 
-            name_png.as_str(), 
-            val3).unwrap();
-        
+        let status_short =
+            qrcode_with_short_hash(val2, utc_to_png.as_str(), name_png.as_str(), val3).unwrap();
+
         println!("{}", status_short);
-
     }
 
-    fn qrcode_with_short_hash(hash: &str, utc_time: &str, name_png: &str, short_hash: &str) -> Result<String, String> {
-        
+    fn qrcode_with_short_hash(
+        hash: &str,
+        utc_time: &str,
+        name_png: &str,
+        short_hash: &str,
+    ) -> Result<String, String> {
         let qrcode_short = Command::new("convert")
             .args(&[
-                  format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(), 
-                  "-gravity", "center", "-scale", "200%",
-                  "-extent","100%", "-scale", "100%",
-                  "-gravity", "south",
-                  "-font", "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf",
-                  "-pointsize","24","-fill","black",
-                  "-draw", format!("text 0,50 '{}-{}'", short_hash, name_png).as_str(),
-                  format!("qrcode/{}_{}_{}.png", short_hash, utc_time, name_png).as_str()
+                format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(),
+                "-gravity",
+                "center",
+                "-scale",
+                "200%",
+                "-extent",
+                "100%",
+                "-scale",
+                "100%",
+                "-gravity",
+                "south",
+                "-font",
+                "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf",
+                "-pointsize",
+                "24",
+                "-fill",
+                "black",
+                "-draw",
+                format!("text 0,50 '{}-{}'", short_hash, name_png).as_str(),
+                format!("qrcode/{}_{}_{}.png", short_hash, utc_time, name_png).as_str(),
             ])
             .stdout(Stdio::piped())
             .output()
@@ -530,11 +709,16 @@ pub mod lib {
 
         let qrcode_short_utf8 = String::from_utf8_lossy(&qrcode_short.stdout);
         if qrcode_short_utf8.is_empty() {
-            Ok(format!("{}", "> qrcode_with_short_hash successfully.".green()))
+            Ok(format!(
+                "{}",
+                "> qrcode_with_short_hash successfully.".green()
+            ))
         } else {
-            Err(format!("{}","> somthing wrong with qrcode_with_short_hash!".bright_red()))
+            Err(format!(
+                "{}",
+                "> somthing wrong with qrcode_with_short_hash!".bright_red()
+            ))
         }
-
     }
 
     pub fn get_secret_gpg(string_path: &str) -> String {
@@ -551,15 +735,18 @@ pub mod lib {
     }
 
     fn read_a_file<T>(filename: T) -> io::Result<io::Lines<io::BufReader<File>>>
-    where T: AsRef<Path>, 
+    where
+        T: AsRef<Path>,
     {
         let file = File::open(filename)?;
         Ok(io::BufReader::new(file).lines())
     }
 
     fn get_list_qrcode() {
-
-        println!("\n{}", "If no input go to default directory qrcode/".bright_yellow());
+        println!(
+            "\n{}",
+            "If no input go to default directory qrcode/".bright_yellow()
+        );
         println!("{}", "By press Enter!".bright_yellow());
         print!("{}", "Input path of qrcode : ".bright_green());
         let path_stdin_val = catch_stdin();
@@ -573,13 +760,17 @@ pub mod lib {
 
         clear_screen!();
         let list_of_qrcode = Command::new("ls")
-            .args(&[
-                 "-a", format!("{}",path_stdin_val_mut).as_str()
-            ])
+            .args(&["-a", format!("{}", path_stdin_val_mut).as_str()])
             .stdout(Stdio::piped())
             .output()
-            .expect(format!("{}", "> somthing wrong with list_of_qrcode. (qrcode directory not found)"
-                            .bright_red()).as_str());
+            .expect(
+                format!(
+                    "{}",
+                    "> somthing wrong with list_of_qrcode. (qrcode directory not found)"
+                        .bright_red()
+                )
+                .as_str(),
+            );
 
         let list_of_qrcode_utf8 = String::from_utf8_lossy(&list_of_qrcode.stdout);
 
@@ -591,7 +782,8 @@ pub mod lib {
 
         let list_of_qrcode_vec: Vec<&str> = list_of_qrcode_split.collect();
 
-        let output: Vec<&str> = list_of_qrcode_vec.clone()
+        let output: Vec<&str> = list_of_qrcode_vec
+            .clone()
             .into_iter()
             .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
             .collect::<Vec<&str>>();
@@ -601,11 +793,14 @@ pub mod lib {
         println!("{}", "--------------".yellow());
         let mut index = 0;
         while index < output.len() {
-            println!("{}. {}", index , output[index].bright_cyan());
+            println!("{}. {}", index, output[index].bright_cyan());
             index += 1;
         }
 
-        print!("{}", "\n> chose file name by index or name: ".bright_green());
+        print!(
+            "{}",
+            "\n> chose file name by index or name: ".bright_green()
+        );
         let chose = catch_stdin();
 
         let out_chose = stdin_check_numeric(chose.as_str());
@@ -619,17 +814,22 @@ pub mod lib {
         }
 
         scan_qrcode(path_name.as_str(), path_stdin_val_mut.as_str());
-        
+
         print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
         let confirm = catch_stdin();
         if confirm == "Y" || confirm == "y" {
-            println!("{}{}", "> passphrase: ".bright_green(), gpg_decrypt().unwrap().bright_yellow());
+            println!(
+                "{}{}",
+                "> passphrase: ".bright_green(),
+                gpg_decrypt().unwrap().bright_yellow()
+            );
         } else {
             println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
         }
-        
-        shred_helper_files(["qrcode_encode.gpg"].to_vec()).unwrap().bright_green();
 
+        shred_helper_files(["qrcode_encode.gpg"].to_vec())
+            .unwrap()
+            .bright_green();
     }
 
     pub fn stdin_check_numeric(val: &str) -> bool {
@@ -638,7 +838,7 @@ pub mod lib {
         let mut numeric = 0;
         for char in chars {
             if char.is_digit(10) {
-               numeric += 1;
+                numeric += 1;
             }
         }
 
@@ -649,9 +849,7 @@ pub mod lib {
         }
     }
 
-
     fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
-
         let mut path_of_file_mut = String::new();
         if path_of_file.is_empty() {
             path_of_file_mut.push_str("qrcode");
@@ -659,11 +857,13 @@ pub mod lib {
             path_of_file_mut.push_str(path_of_file);
         }
 
-        let qrcode_name_location = format!("{}/{}", path_of_file_mut,  name_of_file);
+        let qrcode_name_location = format!("{}/{}", path_of_file_mut, name_of_file);
         let zbar = Command::new("zbarimg")
             .args(&[
-                  "--nodisplay", "--nodbus", "--quiet",
-                  qrcode_name_location.as_str()
+                "--nodisplay",
+                "--nodbus",
+                "--quiet",
+                qrcode_name_location.as_str(),
             ])
             .stdout(Stdio::piped())
             .output()
@@ -673,29 +873,26 @@ pub mod lib {
         let zbar_utf8_replace = zbar_utf8.replace("QR-Code:", "");
         let zbar_utf8_split = zbar_utf8_replace.split("\n");
         let zbar_utf8_vec: Vec<&str> = zbar_utf8_split.collect();
-        
+
         // write to qrcode_decode.gpg
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
-            .open("qrcode_encode.gpg").unwrap();
-        
+            .open("qrcode_encode.gpg")
+            .unwrap();
+
         for line in zbar_utf8_vec.into_iter() {
-            writeln!(&mut file,"{}", line).expect(
-                format!("{}","> something wrong with writeln!".bright_red())
-                .as_str());
+            writeln!(&mut file, "{}", line)
+                .expect(format!("{}", "> something wrong with writeln!".bright_red()).as_str());
         }
 
         let gpgterm = get_secret_gpg("qrcode_encode.gpg");
         println!("> {}", gpgterm.bright_yellow());
-
     }
-    
-    pub fn gpg_decrypt() -> Result<String, String> { 
+
+    pub fn gpg_decrypt() -> Result<String, String> {
         let gpg = Command::new("gpg")
-            .args(&[
-                  "--decrypt", "qrcode_encode.gpg"
-            ])
+            .args(&["--decrypt", "qrcode_encode.gpg"])
             .stdout(Stdio::piped())
             .output()
             .expect("> gpg_decrypt() failed!");
@@ -708,7 +905,11 @@ pub mod lib {
         if !gpg_utf8.is_empty() {
             Ok(format!("{}", gpg_utf8_vec[0]))
         } else {
-            Err(format!("{}{}", "> something wrong with gpg_utf8_err gpg_decrypt() : ".bright_red(), gpg_utf8_err))
+            Err(format!(
+                "{}{}",
+                "> something wrong with gpg_utf8_err gpg_decrypt() : ".bright_red(),
+                gpg_utf8_err
+            ))
         }
     }
 
@@ -722,32 +923,31 @@ pub mod lib {
 
         match option_string {
             val if val == "1" => {
-                print!("\n{}","> Input string: ".cyan());
+                print!("\n{}", "> Input string: ".cyan());
                 let input1 = catch_stdin();
                 print_txt_base64_rot13(input1.as_str())
-            },
+            }
             val if val == "2" => {
-                print!("\n{}","> Input string: ".cyan());
+                print!("\n{}", "> Input string: ".cyan());
                 let input2 = catch_stdin();
                 print_rot13_base64_txt(input2.as_str())
-            },
+            }
             val if val == "3" => {
-                print!("\n{}","> Input String: ".cyan());
+                print!("\n{}", "> Input String: ".cyan());
                 let input3 = catch_stdin();
-                print!("\n{}","> key String: ".cyan());
+                print!("\n{}", "> key String: ".cyan());
                 let input4 = catch_stdin();
                 print_txt_vigenere(input3.as_str(), input4.as_str());
-            },
+            }
             val if val == "4" => {
-                print!("\n{}","> Input String: ".cyan());
+                print!("\n{}", "> Input String: ".cyan());
                 let a = catch_stdin();
-                print!("\n{}","> key String: ".cyan());
+                print!("\n{}", "> key String: ".cyan());
                 let b = catch_stdin();
                 print_vigenere_txt(a.as_str(), b.as_str());
-            },
-            _ => println!("{}", "> Option not available!".bright_red())
+            }
+            _ => println!("{}", "> Option not available!".bright_red()),
         }
-
     }
 
     fn print_rot13_base64_txt(val: &str) {
@@ -757,15 +957,20 @@ pub mod lib {
         println!("{}{}", "--> Rot13  : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}", "--> Base64 : ".bright_green(), from_rot13(val).bright_yellow());
+        println!(
+            "{}{}",
+            "--> Base64 : ".bright_green(),
+            from_rot13(val).bright_yellow()
+        );
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}","--> Txt     : ".bright_green(), 
-                 from_rot13_base64_txt(val)
-                 .unwrap()
-                 .bright_green());
+        println!(
+            "{}{}",
+            "--> Txt     : ".bright_green(),
+            from_rot13_base64_txt(val).unwrap().bright_green()
+        );
     }
-    
+
     fn print_txt_base64_rot13(val: &str) {
         let raw_txt_copy = val.clone();
         println!("{}", "|".bright_green());
@@ -773,13 +978,18 @@ pub mod lib {
         println!("{}{}", "--> Text   : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}", "--> Base64 : ".bright_green(), to_base64(val).unwrap().bright_yellow());
+        println!(
+            "{}{}",
+            "--> Base64 : ".bright_green(),
+            to_base64(val).unwrap().bright_yellow()
+        );
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}","--> Rot13   : ".bright_green(), 
-                 to_txt_base64_rot13(val)
-                 .unwrap()
-                 .bright_green());
+        println!(
+            "{}{}",
+            "--> Rot13   : ".bright_green(),
+            to_txt_base64_rot13(val).unwrap().bright_green()
+        );
     }
 
     fn print_txt_vigenere(val: &str, key: &str) {
@@ -789,7 +999,11 @@ pub mod lib {
         println!("{}{}", "--> Text     : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}", "--> vigenere : ".bright_green(), to_vigenere(val, key).bright_yellow());
+        println!(
+            "{}{}",
+            "--> vigenere : ".bright_green(),
+            to_vigenere(val, key).bright_yellow()
+        );
     }
 
     fn print_vigenere_txt(val: &str, key: &str) {
@@ -799,7 +1013,11 @@ pub mod lib {
         println!("{}{}", "--> Vigenere   : ".bright_green(), raw_txt_copy);
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
-        println!("{}{}", "--> Text       : ".bright_green(), from_vigenere(val, key).bright_yellow());
+        println!(
+            "{}{}",
+            "--> Text       : ".bright_green(),
+            from_vigenere(val, key).bright_yellow()
+        );
     }
 
     pub fn to_txt_base64_rot13(val: &str) -> Result<String, String> {
@@ -810,10 +1028,9 @@ pub mod lib {
         let from_rot13 = from_rot13(from_base64.as_str());
         match from_rot13 {
             val if !val.is_empty() => Ok(val),
-            _ => Err("Error cant generate strin from rot13!.".to_string())
+            _ => Err("Error cant generate strin from rot13!.".to_string()),
         }
     }
-
 
     pub fn from_rot13_base64_txt(val: &str) -> Result<String, String> {
         let from_rot13 = from_rot13(val);
@@ -823,7 +1040,7 @@ pub mod lib {
 
         match from_base64 {
             val if !val.is_empty() => Ok(val),
-            _ => Err("Error cant generate strin from rot13!.".to_string())
+            _ => Err("Error cant generate strin from rot13!.".to_string()),
         }
     }
 
@@ -836,7 +1053,7 @@ pub mod lib {
 
         match to_base64_copy {
             y if !y.is_empty() => Ok(to_base64),
-            _ => Err("Error cant generate base64 from string!".to_string())
+            _ => Err("Error cant generate base64 from string!".to_string()),
         }
     }
 
@@ -854,16 +1071,14 @@ pub mod lib {
         }
     }
 
-
     pub fn to_sha256(file: &str) -> Vec<String> {
-        
-        let get_gpg_from_file = get_secret_gpg(file); 
-        
+        let get_gpg_from_file = get_secret_gpg(file);
+
         let hasher = sha256(get_gpg_from_file.as_bytes());
         let hash_value = hex::encode(hasher);
 
         let get_gpg_from_file_split = get_gpg_from_file.split("\n");
-        let hash_vec:Vec<&str> = get_gpg_from_file_split.collect();
+        let hash_vec: Vec<&str> = get_gpg_from_file_split.collect();
 
         println!("{}{}", "> Hash sha256 : ".bright_yellow(), hash_value);
         for line in hash_vec {
@@ -892,14 +1107,13 @@ pub mod lib {
         }
 
         vec![short_hash, hash_value, get_gpg_from_file]
-
     }
 
     pub fn to_vigenere(val: &str, key: &str) -> String {
         let key_vigenere = Vigenere::new(String::from(key));
         key_vigenere.encrypt(val).unwrap()
     }
-    
+
     pub fn from_vigenere(val: &str, key: &str) -> String {
         let key_vigenere = Vigenere::new(String::from(key));
         key_vigenere.decrypt(val).unwrap()
@@ -914,55 +1128,77 @@ pub mod lib {
     }
 
     pub fn generate_mnemonic_word(count_words: usize, language: &str) -> String {
-
         let mut phrase_result = String::new();
         match language {
             lg if lg == "English" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::English);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::English,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "French" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::French);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::French,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "Italian" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::Italian);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::Italian,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "Japanese" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::Japanese);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::Japanese,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "Korean" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::Korean);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::Korean,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "Spanish" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::Spanish);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::Spanish,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "ChineseSimplified" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::ChineseSimplified);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::ChineseSimplified,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             lg if lg == "ChineseTraditional" => {
-                let mnemonic = Mnemonic::new(MnemonicType::for_word_count(count_words).unwrap(), Language::ChineseTraditional);
+                let mnemonic = Mnemonic::new(
+                    MnemonicType::for_word_count(count_words).unwrap(),
+                    Language::ChineseTraditional,
+                );
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
-            },
+            }
             _ => println!("Umatch language generate_mnemonic_word!"),
         }
 
         phrase_result
     }
-
 }
 
 #[cfg(test)]
@@ -972,14 +1208,14 @@ mod tests {
     #[test]
     fn test_to_viginere() {
         let key = "bishon";
-        let value ="MESSAGE";
+        let value = "MESSAGE";
         assert_eq!("NMKZOTF", to_vigenere(value, key));
     }
-    
+
     #[test]
     fn test_from_viginere() {
         let key = "bishon";
-        let value ="NMKZOTF";
+        let value = "NMKZOTF";
         assert_eq!("MESSAGE", from_vigenere(value, key));
     }
 
@@ -989,7 +1225,7 @@ mod tests {
         let real = to_txt_base64_rot13(txt).unwrap();
         assert_eq!("FRIZGR8u", real);
     }
-    
+
     #[test]
     fn test_from_rot13_base64_txt() {
         let txt = "FRIZGR8u";
@@ -1024,7 +1260,7 @@ mod tests {
 
     #[test]
     fn test_diceware_generate() {
-        let dice:Vec<String> = diceware_generate("1","minilock","-");
+        let dice: Vec<String> = diceware_generate("1", "minilock", "-");
         let mut val = false;
         for el in dice {
             let n = stdin_check_numeric(el.as_str());
@@ -1039,9 +1275,8 @@ mod tests {
 
     #[test]
     fn test_generate_eff_word() {
-        let eff:String = generate_eff_word(1);
+        let eff: String = generate_eff_word(1);
         let n = stdin_check_numeric(eff.as_str());
         assert_eq!(n, false);
     }
-
 }
