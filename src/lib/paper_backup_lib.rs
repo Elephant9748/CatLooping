@@ -244,6 +244,9 @@ pub mod lib {
         menu_result
     }
 
+    #[derive(Debug)]
+    pub struct Eff;
+
     pub fn menu_option(menu_list: Menu) {
         match menu_list {
             Menu::Help => get_help(),
@@ -271,7 +274,7 @@ pub mod lib {
                 println!(
                     "{}{}",
                     "entropy   : ".cyan(),
-                    diceware_generate(arg.as_str(), "minilock", "-")[1]
+                    passphrase.find_entropy().unwrap()
                 );
                 println!(
                     "{}{}\n",
@@ -437,33 +440,6 @@ pub mod lib {
                 }
             }
         }
-    }
-
-    pub fn diceware_generate(n_value: &str, wordlist: &str, delimiter: &str) -> Vec<String> {
-        let diceware = Command::new("bin/diceware")
-            .args(&["-d", delimiter, "-e", "-n", n_value, "-l", wordlist])
-            .stdout(Stdio::piped())
-            .output()
-            .expect(
-                format!(
-                    "{}{}",
-                    "> Failed to run diceware : ".bright_red(),
-                    "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()
-                )
-                .as_str(),
-            );
-
-        let dice = String::from_utf8_lossy(&diceware.stdout);
-
-        let dice_split = dice.split("\n");
-
-        let dice_vec: Vec<&str> = dice_split.collect();
-
-        dice_vec
-            .into_iter()
-            .filter(|v| v.to_string() != "")
-            .map(|x| x.to_string())
-            .collect()
     }
 
     // generate from eff-wordlist crates
@@ -1260,7 +1236,8 @@ mod tests {
 
     #[test]
     fn test_diceware_generate() {
-        let dice: Vec<String> = diceware_generate("1", "minilock", "-");
+        let dice_init = Dice::new(1, "minilock", "-");
+        let dice: Vec<String> = dice_init.generate_wordlist();
         let mut val = false;
         for el in dice {
             let n = stdin_check_numeric(el.as_str());
