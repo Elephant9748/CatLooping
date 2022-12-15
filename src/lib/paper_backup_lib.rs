@@ -59,7 +59,6 @@ pub mod lib {
                 n_value: Some(n_value),
                 wordlist: Some(wordlist),
                 delimiter: Some(delimiter),
-
             }
         }
     }
@@ -67,7 +66,7 @@ pub mod lib {
     pub trait Diceware {
         fn generate_wordlist(&self) -> Vec<String>;
     }
-    
+
     pub trait DiceVec {
         fn find_entropy(&self) -> Option<&str>;
         fn find_passphrase(&self) -> Option<&str>;
@@ -136,7 +135,7 @@ pub mod lib {
         pub fn new(n_value: usize) -> Self {
             let value = n_value;
             Self {
-                n_value: Some(value)
+                n_value: Some(value),
             }
         }
     }
@@ -164,6 +163,100 @@ pub mod lib {
         }
     }
 
+    #[derive(Debug)]
+    pub struct Mnemonics<'mn> {
+        count_words: Option<usize>,
+        language: Option<&'mn str>,
+    }
+
+    impl<'mn> Mnemonics<'mn> {
+        pub fn new(count_words: usize, language: &'mn str) -> Self {
+            Self {
+                count_words: Some(count_words),
+                language: Some(language),
+            }
+        }
+    }
+
+    pub trait Bip39 {
+        fn generate_mnemonic_word(&self) -> Option<String>;
+    }
+
+    impl<'mn> Bip39 for Mnemonics<'mn> {
+        fn generate_mnemonic_word(&self) -> Option<String> {
+            let mut phrase_result = String::new();
+            match self.language? {
+                lg if lg == "English" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::English,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "French" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::French,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "Italian" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::Italian,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "Japanese" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::Japanese,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "Korean" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::Korean,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "Spanish" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::Spanish,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "ChineseSimplified" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::ChineseSimplified,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                lg if lg == "ChineseTraditional" => {
+                    let mnemonic = Mnemonic::new(
+                        MnemonicType::for_word_count(self.count_words?).unwrap(),
+                        Language::ChineseTraditional,
+                        );
+                    let phrase: &str = mnemonic.phrase();
+                    phrase_result.push_str(phrase);
+                }
+                _ => println!("Umatch language generate_mnemonic_word!"),
+            }
+
+            Some(phrase_result)
+        }
+    }
+    
     pub fn get_help() {
         println!("\nrequire: ");
         println!("       - rust-diceware binary from crate.io manually installed");
@@ -291,17 +384,26 @@ pub mod lib {
 
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
-                println!("{}{}", "entropy   : ".cyan(), diceware.find_entropy().unwrap());
+                println!(
+                    "{}{}",
+                    "entropy   : ".cyan(),
+                    diceware.find_entropy().unwrap()
+                );
                 println!(
                     "{}{}\n",
                     "passphrase: ".green(),
-                    diceware.find_passphrase().unwrap().color("white").on_color("black").italic()
+                    diceware
+                        .find_passphrase()
+                        .unwrap()
+                        .color("white")
+                        .on_color("black")
+                        .italic()
                 );
             }
             Menu::DicewareLock(arg) => {
                 let phrase = Dice::new(arg.parse::<u32>().unwrap(), "minilock", "-");
                 let passphrase = phrase.generate_wordlist();
-                
+
                 println!("{}", "> diceware".bright_cyan());
                 println!("{}", "---------".bright_cyan());
                 println!(
@@ -312,7 +414,12 @@ pub mod lib {
                 println!(
                     "{}{}\n",
                     "passphrase: ".green(),
-                    passphrase.find_passphrase().unwrap().color("white").on_color("black").italic()
+                    passphrase
+                        .find_passphrase()
+                        .unwrap()
+                        .color("white")
+                        .on_color("black")
+                        .italic()
                 );
 
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
@@ -343,7 +450,11 @@ pub mod lib {
                 let init_eff = Eff::new(arg);
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n", "Output: ".green(), init_eff.generate_eff().unwrap());
+                println!(
+                    "{}{}\n",
+                    "Output: ".green(),
+                    init_eff.generate_eff().unwrap()
+                );
             }
             Menu::EffLock(arg) => {
                 let init_eff = Eff::new(arg);
@@ -391,12 +502,13 @@ pub mod lib {
             }
             Menu::Convert => main_convert(),
             Menu::MnemonicGen(arg1, arg2) => {
-                let out = generate_mnemonic_word(arg1, arg2.as_str());
-                println!("\n{}{}", "> Phrase: ".bright_green(), out.bright_cyan());
+                let init_mnemonic = Mnemonics::new(arg1, arg2.as_str());
+                let out = init_mnemonic.generate_mnemonic_word();
+                println!("\n{}{}", "> Phrase: ".bright_green(), out.unwrap().bright_cyan());
             }
             Menu::MnemonicGenLock(arg1, arg2) => {
-                let mnemoniclock_val = generate_mnemonic_word(arg1, arg2.as_str());
-                let mnemoniclock_val_copy = mnemoniclock_val.clone();
+                let init_mnemonic = Mnemonics::new(arg1, arg2.as_str());
+                let mnemoniclock_val = init_mnemonic.generate_mnemonic_word().unwrap();
                 println!(
                     "\n{}{}",
                     "> Phrase: ".bright_green(),
@@ -407,7 +519,7 @@ pub mod lib {
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        store_tofile(mnemoniclock_val_copy);
+                        store_tofile(mnemoniclock_val);
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
 
@@ -1120,78 +1232,6 @@ pub mod lib {
         Rot13::decrypt(val)
     }
 
-    pub fn generate_mnemonic_word(count_words: usize, language: &str) -> String {
-        let mut phrase_result = String::new();
-        match language {
-            lg if lg == "English" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::English,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "French" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::French,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "Italian" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::Italian,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "Japanese" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::Japanese,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "Korean" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::Korean,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "Spanish" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::Spanish,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "ChineseSimplified" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::ChineseSimplified,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            lg if lg == "ChineseTraditional" => {
-                let mnemonic = Mnemonic::new(
-                    MnemonicType::for_word_count(count_words).unwrap(),
-                    Language::ChineseTraditional,
-                );
-                let phrase: &str = mnemonic.phrase();
-                phrase_result.push_str(phrase);
-            }
-            _ => println!("Umatch language generate_mnemonic_word!"),
-        }
-
-        phrase_result
-    }
 }
 
 #[cfg(test)]
