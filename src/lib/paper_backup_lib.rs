@@ -127,6 +127,42 @@ pub mod lib {
         }
     }
 
+    #[derive(Debug)]
+    pub struct Eff {
+        n_value: Option<usize>,
+    }
+
+    impl Eff {
+        pub fn new(n_value: usize) -> Self {
+            let value = n_value;
+            Self {
+                n_value: Some(value)
+            }
+        }
+    }
+
+    pub trait Effdefault {
+        fn generate_eff(&self) -> Option<String>;
+    }
+
+    impl Effdefault for Eff {
+        fn generate_eff(&self) -> Option<String> {
+            let mut words: Vec<String> = Vec::new();
+
+            let mut words_string = String::new();
+
+            while words.len() < self.n_value.unwrap() {
+                let word = eff_wordlist::large::random_word();
+                words.push(word.to_string());
+                words_string.push_str(&word.to_string());
+                words_string.push('-');
+            }
+
+            words_string.pop();
+
+            Some(words_string)
+        }
+    }
 
     pub fn get_help() {
         println!("\nrequire: ");
@@ -244,9 +280,6 @@ pub mod lib {
         menu_result
     }
 
-    #[derive(Debug)]
-    pub struct Eff;
-
     pub fn menu_option(menu_list: Menu) {
         match menu_list {
             Menu::Help => get_help(),
@@ -307,22 +340,27 @@ pub mod lib {
             }
             Menu::Unlock => get_list_qrcode(),
             Menu::Eff(arg) => {
+                let init_eff = Eff::new(arg);
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n", "Output: ".green(), generate_eff_word(arg));
+                println!("{}{}\n", "Output: ".green(), init_eff.generate_eff().unwrap());
             }
             Menu::EffLock(arg) => {
-                let gen = generate_eff_word(arg);
-                let gen_copy = gen.clone();
+                // let gen = generate_eff_word(arg);
+                // let gen_copy = gen.clone();
+
+                let init_eff = Eff::new(arg);
+                let eff = init_eff.generate_eff().unwrap();
+
                 println!("\neff wordlist");
                 println!("------------");
-                println!("{}{}\n", "Output: ".green(), gen);
+                println!("{}{}\n", "Output: ".green(), eff);
 
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        store_tofile(gen_copy);
+                        store_tofile(eff);
 
                         println!("{}", gpg_encrypt().unwrap().bright_green());
 
