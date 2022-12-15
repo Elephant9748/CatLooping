@@ -190,7 +190,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::English,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -198,7 +198,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::French,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -206,7 +206,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::Italian,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -214,7 +214,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::Japanese,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -222,7 +222,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::Korean,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -230,7 +230,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::Spanish,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -238,7 +238,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::ChineseSimplified,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -246,7 +246,7 @@ pub mod lib {
                     let mnemonic = Mnemonic::new(
                         MnemonicType::for_word_count(self.count_words?).unwrap(),
                         Language::ChineseTraditional,
-                        );
+                    );
                     let phrase: &str = mnemonic.phrase();
                     phrase_result.push_str(phrase);
                 }
@@ -256,7 +256,7 @@ pub mod lib {
             Some(phrase_result)
         }
     }
-    
+
     pub fn menu_option(menu_list: Menu) {
         match menu_list {
             Menu::Help => get_help(),
@@ -388,7 +388,11 @@ pub mod lib {
             Menu::MnemonicGen(arg1, arg2) => {
                 let init_mnemonic = Mnemonics::new(arg1, arg2.as_str());
                 let out = init_mnemonic.generate_mnemonic_word();
-                println!("\n{}{}", "> Phrase: ".bright_green(), out.unwrap().bright_cyan());
+                println!(
+                    "\n{}{}",
+                    "> Phrase: ".bright_green(),
+                    out.unwrap().bright_cyan()
+                );
             }
             Menu::MnemonicGenLock(arg1, arg2) => {
                 let init_mnemonic = Mnemonics::new(arg1, arg2.as_str());
@@ -1231,8 +1235,6 @@ pub mod lib {
 
         menu_result
     }
-
-
 }
 
 #[cfg(test)]
