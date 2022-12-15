@@ -346,9 +346,6 @@ pub mod lib {
                 println!("{}{}\n", "Output: ".green(), init_eff.generate_eff().unwrap());
             }
             Menu::EffLock(arg) => {
-                // let gen = generate_eff_word(arg);
-                // let gen_copy = gen.clone();
-
                 let init_eff = Eff::new(arg);
                 let eff = init_eff.generate_eff().unwrap();
 
@@ -478,24 +475,6 @@ pub mod lib {
                 }
             }
         }
-    }
-
-    // generate from eff-wordlist crates
-    pub fn generate_eff_word(val: usize) -> String {
-        let mut words: Vec<String> = Vec::new();
-
-        let mut words_string = String::new();
-
-        while words.len() < val {
-            let word = eff_wordlist::large::random_word();
-            words.push(word.to_string());
-            words_string.push_str(&word.to_string());
-            words_string.push('-');
-        }
-
-        words_string.pop();
-
-        words_string
     }
 
     pub fn catch_stdin() -> String {
@@ -1290,8 +1269,9 @@ mod tests {
 
     #[test]
     fn test_generate_eff_word() {
-        let eff: String = generate_eff_word(1);
-        let n = stdin_check_numeric(eff.as_str());
+        let init_eff = Eff::new(1);
+        let eff = init_eff.generate_eff();
+        let n = stdin_check_numeric(eff.unwrap().as_str());
         assert_eq!(n, false);
     }
 }
