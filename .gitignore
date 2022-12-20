@@ -1,4 +1,5 @@
 /target
+/qrcode
 .zsh_history
 frost
 secret.gpg
