@@ -329,7 +329,7 @@ pub mod lib {
                     exit_this!();
                 }
             }
-            Menu::Unlock => get_list_qrcode(),
+            Menu::Unlock => unlock_qrcode(),
             Menu::Eff(arg) => {
                 let init_eff = Eff::new(arg);
                 println!("\neff wordlist");
@@ -735,7 +735,7 @@ pub mod lib {
         Ok(io::BufReader::new(file).lines())
     }
 
-    fn get_list_qrcode() {
+    fn unlock_qrcode() {
         println!(
             "\n{}",
             "If no input go to default directory qrcode/".bright_yellow()
@@ -794,35 +794,87 @@ pub mod lib {
             "{}",
             "\n> chose file name by index or name: ".bright_green()
         );
+
         let chose = catch_stdin();
+        let mut chose_copy = chose.clone();
 
         let out_chose = stdin_check_numeric(chose.as_str());
+
+        let mut chose_split: Vec<&str> = Vec::new();
 
         let mut path_name = String::new();
         if out_chose {
             let index_path_name = chose.trim().parse::<usize>().unwrap();
             path_name.push_str(output[index_path_name]);
         } else {
-            path_name.push_str(format!("{}", chose).as_str());
+            if chose.contains("[") && chose.contains("]") && chose.contains(",") {
+                chose_copy.remove(chose_copy.len() - 1);
+                chose_copy.remove(0);
+                chose_split = chose_copy.split(",").collect();
+            } else {
+                path_name.push_str(format!("{}", chose).as_str());
+            }
         }
 
-        scan_qrcode(path_name.as_str(), path_stdin_val_mut.as_str());
+        if chose_split.is_empty() {
+            scan_qrcode(path_name.as_str(), path_stdin_val_mut.as_str());
 
-        print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
-        let confirm = catch_stdin();
-        if confirm == "Y" || confirm == "y" {
-            println!(
-                "{}{}",
-                "> passphrase: ".bright_green(),
-                gpg_decrypt().unwrap().bright_yellow()
-            );
+            print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
+            let confirm = catch_stdin();
+            if confirm == "Y" || confirm == "y" {
+                println!(
+                    "{}{}",
+                    "> passphrase: ".bright_green(),
+                    gpg_decrypt().unwrap().bright_yellow()
+                );
+            } else {
+                println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
+            }
+
+            shred_helper_files(["qrcode_encode.gpg"].to_vec())
+                .unwrap()
+                .bright_green();
         } else {
-            println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
-        }
+            let output_copy = output.clone();
+            let index_chose_split: Vec<usize> = chose_split
+                .iter()
+                .map(|x| x.trim().parse::<usize>().unwrap())
+                .collect();
 
-        shred_helper_files(["qrcode_encode.gpg"].to_vec())
-            .unwrap()
-            .bright_green();
+            for el in index_chose_split.iter() {
+                println!(
+                    "{}{}",
+                    "> ".bright_purple(),
+                    output_copy[*el].bright_purple()
+                );
+            }
+            sleep(Duration::from_millis(500));
+
+            print!("{}", "> Do yo want to show passphrase[y/n]: ".bright_red());
+            let confirm = catch_stdin();
+            if confirm == "Y" || confirm == "y" {
+                for path_n in index_chose_split.iter() {
+                    scan_qrcode(output_copy[*path_n], path_stdin_val_mut.as_str());
+
+                    println!(
+                        "{}{}",
+                        "> ".bright_purple(),
+                        output_copy[*path_n].bright_purple()
+                    );
+                    println!(
+                        "{}{}",
+                        "> passphrase: ".bright_green(),
+                        gpg_decrypt().unwrap().bright_yellow()
+                    );
+
+                    shred_helper_files(["qrcode_encode.gpg"].to_vec())
+                        .unwrap()
+                        .bright_green();
+                }
+            } else {
+                println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
+            }
+        }
     }
 
     pub fn stdin_check_numeric(val: &str) -> bool {
