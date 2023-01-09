@@ -7,11 +7,6 @@
 sudo apt install imagemagick-6.q16hdri
 ```
 
-```
-cargo install diceware
-```
-
-
 **how to get**
 ```
 git clone https://github.com/BigOrt/CatLooping.git paper_backup && cd paper_backup && mkdir -p qrcode 
