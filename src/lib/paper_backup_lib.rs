@@ -467,7 +467,7 @@ pub mod lib {
                 let forward_this = catch_stdin();
                 match forward_this {
                     x if x == "y" || x == "Y" => {
-                        qrcode_generate_to_file(arg.as_str(), "raw-text-0", "raw-text-1");
+                        qrcode_generate_to_file(arg.as_str(), "qr0", "qr");
                     }
                     _ => {
                         exit_this!();
