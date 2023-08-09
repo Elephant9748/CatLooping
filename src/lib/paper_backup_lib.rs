@@ -618,6 +618,27 @@ pub mod lib {
         }
     }
 
+    pub fn reset_gpg_agent() -> Result<String, String>{
+        let mut option: Vec<&str> = Vec::new();
+        option.push("--kill");
+        option.push("all");
+
+        let run = Command::new("gpg")
+            .args(&option)
+            .stdout(Stdio::piped())
+            .output()
+            .expect("failed reset_gpg_agent!");
+
+        let run_utf8 = String::from_utf8_lossy(&run.stdout);
+        let run_utf8_err = String::from_utf8_lossy(&run.stderr);
+
+        if run_utf8.is_empty() {
+            Ok(format!("{}", "> reset gpg agent ok. ".green()))
+        } else {
+            Err(format!("> something wrong with reset_gpg_agent: {}",run_utf8_err))
+        }
+    }
+
     pub fn process_bar(val: usize) {
         init_progress_bar(val);
         set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
@@ -784,10 +805,19 @@ pub mod lib {
         println!();
         println!("{}", "List of orcode".yellow());
         println!("{}", "--------------".yellow());
-        let mut index = 0;
-        while index < output.len() {
-            println!("{}. {}", index, output[index].bright_cyan());
-            index += 1;
+
+        let mut index = Some(0);
+
+        while let Some(i) = index {
+            if i == output.len() {
+                index = None;
+            } else if i % 2 == 0 {
+                println!("{}. {}", i, output[i].bright_purple());
+                index = Some(i + 1);
+            } else {
+                println!("{}. {}", i, output[i].bright_yellow());
+                index = Some(i + 1);
+            }
         }
 
         print!(
@@ -875,6 +905,7 @@ pub mod lib {
                 println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
             }
         }
+        println!("{}", reset_gpg_agent().unwrap().bright_green());
     }
 
     pub fn stdin_check_numeric(val: &str) -> bool {
