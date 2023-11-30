@@ -1,8 +1,8 @@
-## catlooping
+## paper_backup
 
 **its just paper backup**
 
-**prerequisites**
+**prerequisites: **
 ```
 sudo apt install imagemagick-6.q16hdri
 ```
@@ -17,6 +17,12 @@ cd paper_backup && mkdir -p qrcode
 cargo build
 cargo run -- --help
 ```
+
+**build binaries**
+```
+cargo build --release
+```
+located in `~/target/release/paper_backup`
 
 **Usage :**
 ```
