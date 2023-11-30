@@ -2,7 +2,7 @@
 
 **its just paper backup**
 
-**prerequisites: **
+**prerequisites:**
 ```
 sudo apt install imagemagick-6.q16hdri
 ```
