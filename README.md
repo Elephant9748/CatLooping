@@ -9,7 +9,7 @@ sudo apt install imagemagick-6.q16hdri
 
 **how to get**
 ```
-git clone https://gitlab.com/morthy461/paper_backup.git && \
+git clone [ this-repo ] && \
 cd paper_backup && mkdir -p qrcode 
 ```
 
