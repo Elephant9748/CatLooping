@@ -735,6 +735,9 @@ pub mod lib {
             "> qrcode location : ".green(),
             name_png_print_copy.magenta()
         );
+        let qrcode_shrink = qrcode_with_short2(utc_to_png.as_str(), name_png.as_str()).unwrap();
+
+        println!("{}", qrcode_shrink);
     }
 
     fn qrcode_with_short_hash(
@@ -780,6 +783,48 @@ pub mod lib {
             Err(format!(
                 "{}",
                 "> somthing wrong with qrcode_with_short_hash!".bright_red()
+            ))
+        }
+    }
+
+    fn qrcode_with_short2(utc_time: &str, name_png: &str) -> Result<String, String> {
+        let qrcode_short = Command::new("convert")
+            .args(&[
+                format!("qrcode/qrfile_{}_{}.png", &utc_time, &name_png).as_str(),
+                "-gravity",
+                "center",
+                "-scale",
+                "200%",
+                "-extent",
+                "100%",
+                "-scale",
+                "100%",
+                "-gravity",
+                "south",
+                "-font",
+                "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf",
+                "-pointsize",
+                "24",
+                "-fill",
+                "black",
+                "-draw",
+                format!("text 0,50 '{}-{}'", utc_time, name_png).as_str(),
+                format!("qrcode/qrfile_tag_{}_{}.png", utc_time, name_png).as_str(),
+            ])
+            .stdout(Stdio::piped())
+            .output()
+            .expect("> somthing wrong with convert image!!");
+
+        let qrcode_short_utf8 = String::from_utf8_lossy(&qrcode_short.stdout);
+        if qrcode_short_utf8.is_empty() {
+            Ok(format!(
+                "{}",
+                "> qrcode_with_name_tag successfully.".green()
+            ))
+        } else {
+            Err(format!(
+                "{}",
+                "> somthing wrong with qrcode_with_name_tag!".bright_red()
             ))
         }
     }
