@@ -618,7 +618,7 @@ pub mod lib {
         }
     }
 
-    pub fn reset_gpg_agent() -> Result<String, String>{
+    pub fn reset_gpg_agent() -> Result<String, String> {
         let mut option: Vec<&str> = Vec::new();
         option.push("--kill");
         option.push("all");
@@ -635,7 +635,10 @@ pub mod lib {
         if run_utf8.is_empty() {
             Ok(format!("{}", "> reset gpg agent ok. ".green()))
         } else {
-            Err(format!("> something wrong with reset_gpg_agent: {}",run_utf8_err))
+            Err(format!(
+                "> something wrong with reset_gpg_agent: {}",
+                run_utf8_err
+            ))
         }
     }
 
@@ -1027,7 +1030,7 @@ pub mod lib {
     }
 
     fn print_rot13_base64_txt(val: &str) {
-        let raw_txt_copy = val.clone();
+        let raw_txt_copy = val;
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Rot13  : ".bright_green(), raw_txt_copy);
@@ -1048,7 +1051,7 @@ pub mod lib {
     }
 
     fn print_txt_base64_rot13(val: &str) {
-        let raw_txt_copy = val.clone();
+        let raw_txt_copy = val;
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Text   : ".bright_green(), raw_txt_copy);
@@ -1069,7 +1072,7 @@ pub mod lib {
     }
 
     fn print_txt_vigenere(val: &str, key: &str) {
-        let raw_txt_copy = val.clone();
+        let raw_txt_copy = val;
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Text     : ".bright_green(), raw_txt_copy);
@@ -1083,7 +1086,7 @@ pub mod lib {
     }
 
     fn print_vigenere_txt(val: &str, key: &str) {
-        let raw_txt_copy = val.clone();
+        let raw_txt_copy = val;
         println!("{}", "|".bright_green());
         println!("{}", "|".bright_green());
         println!("{}{}", "--> Vigenere   : ".bright_green(), raw_txt_copy);
