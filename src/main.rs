@@ -52,6 +52,11 @@ fn main() {
                 let input_string_type = catch_stdin();
                 menu_option(Menu::LockString(input_string_type));
             }
+            val if val == "--to-file" => {
+                print!("\n{}", "> Path of file: ".bright_green());
+                let path = catch_stdin();
+                menu_option(Menu::ToFile(path));
+            }
             val if val == "--qrcode-no-pgp" => {
                 print!("\n{}", "> Input string: ".bright_red());
                 let raw_string = catch_stdin();

@@ -29,6 +29,7 @@ pub mod lib {
         MnemonicGen(usize, String),
         MnemonicGenLock(usize, String),
         LockString(String),
+        ToFile(String),
         QrOnly(String),
         Unlock,
         Convert,
@@ -462,6 +463,18 @@ pub mod lib {
                     }
                 }
             }
+            Menu::ToFile(arg) => {
+                print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+                let forward_this = catch_stdin();
+                match forward_this {
+                    x if x == "y" || x == "Y" => {
+                        qrcode_generate_to_file2(arg.as_str(), "qrfile");
+                    }
+                    _ => {
+                        exit_this!();
+                    }
+                }
+            }
             Menu::QrOnly(arg) => {
                 print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
                 let forward_this = catch_stdin();
@@ -689,6 +702,39 @@ pub mod lib {
             qrcode_with_short_hash(val2, utc_to_png.as_str(), name_png.as_str(), val3).unwrap();
 
         println!("{}", status_short);
+    }
+
+    // for pure file to qrcode
+    pub fn qrcode_generate_to_file2(file: &str, val2: &str) {
+        let utc: DateTime<Utc> = Utc::now();
+        let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
+        print!("{}", "> Name your qrcode file: ".bright_yellow());
+
+        let content_file = std::fs::read_to_string(file).expect("read_file failed !");
+
+        let name_png = catch_stdin();
+        let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
+        let name_png_print_copy = name_png_print.clone();
+        let mut qrcode = QrCode::new(content_file.as_bytes(), QrCodeEcc::Medium).unwrap();
+
+        qrcode.margin(50);
+        qrcode.zoom(10);
+
+        let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
+        std::fs::write(name_png_print, buffer).expect(
+            format!(
+                "{}",
+                ">Something wrong with qrcode_generate write file".red()
+            )
+            .as_str(),
+        );
+
+        print_qr(&content_file).unwrap();
+        println!(
+            "{}{}",
+            "> qrcode location : ".green(),
+            name_png_print_copy.magenta()
+        );
     }
 
     fn qrcode_with_short_hash(
@@ -1223,6 +1269,7 @@ pub mod lib {
         println!("       --unlock         :  Unlock qrcode from directory qrcode/");
         println!("       --lock-string    :  Generate qrcode paper backup from string input");
         println!("       --qrcode-no-pgp  :  Generate qrcode only no pgp");
+        println!("       --to-file        :  Generate qrcode only no pgp from file");
         println!("       --convert        :  Convertion string to ?\n");
     }
 
