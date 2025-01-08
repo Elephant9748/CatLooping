@@ -746,7 +746,7 @@ pub mod lib {
         name_png: &str,
         short_hash: &str,
     ) -> Result<String, String> {
-        let qrcode_short = Command::new("convert")
+        let qrcode_short = Command::new("magick")
             .args(&[
                 format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(),
                 "-gravity",
