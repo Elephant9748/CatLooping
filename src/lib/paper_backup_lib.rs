@@ -760,7 +760,7 @@ pub mod lib {
                 "-gravity",
                 "south",
                 "-font",
-                "/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf",
+                "/usr/share/fonts/noto/NotoSansMono-Regular.ttf",
                 "-pointsize",
                 "24",
                 "-fill",
