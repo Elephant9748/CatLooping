@@ -92,7 +92,16 @@ pub mod lib {
 
     impl<'dice> Diceware for Dice<'dice> {
         fn generate_wordlist(&self) -> Vec<String> {
-            let diceware = Command::new("bin/diceware")
+            let path_diceware = "~/.cargo/bin/diceware";
+            let check_path_magick = Path::new(path_diceware);
+            let mut run_bin = Box::new("diceware");
+            if check_path_magick.exists() {
+                *run_bin = "diceware";
+            } else {
+                panic!("{}", "> convert doesnt exists ..!".bright_red());
+            }
+
+            let diceware = Command::new(*run_bin)
                 .args(&[
                     "-d",
                     self.delimiter.unwrap(),
@@ -746,7 +755,23 @@ pub mod lib {
         name_png: &str,
         short_hash: &str,
     ) -> Result<String, String> {
-        let qrcode_short = Command::new("magick")
+        let path_magick = "/usr/bin/magick";
+        let path_convert = "/usr/bin/convert";
+        let check_path_magick = Path::new(path_magick);
+        let check_path_convert = Path::new(path_convert);
+        let mut run_bin = Box::new("magisk");
+        if check_path_magick.exists() {
+            *run_bin = "magisk";
+        } else {
+            return Err(format!("{}", "> convert doesnt exists ..!".bright_red()));
+        }
+        if check_path_convert.exists() {
+            *run_bin = "convert";
+        } else {
+            return Err(format!("{}", "> convert doesnt exists ..!".bright_red()));
+        }
+
+        let qrcode_short = Command::new(*run_bin)
             .args(&[
                 format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(),
                 "-gravity",
@@ -771,7 +796,7 @@ pub mod lib {
             ])
             .stdout(Stdio::piped())
             .output()
-            .expect("> somthing wrong with hashlib_python!");
+            .expect("> something wrong with image magick!");
 
         let qrcode_short_utf8 = String::from_utf8_lossy(&qrcode_short.stdout);
         if qrcode_short_utf8.is_empty() {
