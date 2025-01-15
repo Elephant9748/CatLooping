@@ -4,12 +4,13 @@
 
 **prerequisites:**
 ```
-sudo apt install imagemagick-6.q16hdri
+- imagemagick (package manager)
+- diceware (cargo install diceware)
 ```
 
 **how to get**
 ```
-git clone [ this-repo ] && \
+git clone [ this-repo ] paper_backup && \
 cd paper_backup && mkdir -p qrcode 
 ```
 
