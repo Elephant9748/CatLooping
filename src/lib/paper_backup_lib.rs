@@ -10,8 +10,8 @@ pub mod lib {
     use qr2term::*;
     use qrcode_png::{Color as ColorQr, QrCode, QrCodeEcc};
     use std::{
-        fs::File,
-        fs::OpenOptions,
+        env::var_os,
+        fs::{File, OpenOptions},
         io::{self, BufRead, Cursor, Read, Write},
         path::Path,
         process::{Command, Stdio},
@@ -92,13 +92,17 @@ pub mod lib {
 
     impl<'dice> Diceware for Dice<'dice> {
         fn generate_wordlist(&self) -> Vec<String> {
-            let path_diceware = "~/.cargo/bin/diceware";
-            let check_path_magick = Path::new(path_diceware);
+            let path_diceware = format!(
+                "{}/.cargo/bin/diceware",
+                var_os("HOME").unwrap().to_owned().to_string_lossy()
+            );
+            let check_path_magick = Path::new(&path_diceware);
             let mut run_bin = Box::new("diceware");
+            println!("{:?}", check_path_magick.exists());
             if check_path_magick.exists() {
                 *run_bin = "diceware";
             } else {
-                panic!("{}", "> convert doesnt exists ..!".bright_red());
+                panic!("{}", "> diceware doesnt exists ..!".bright_red());
             }
 
             let diceware = Command::new(*run_bin)
