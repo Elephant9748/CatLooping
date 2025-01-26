@@ -1,6 +1,12 @@
 use colored::Colorize;
-use paper_backup::lib::*;
+// use paper_backup::lib::*;
 use std::env;
+
+mod cipher_string;
+mod entropy_check;
+mod paper_backup;
+
+use crate::paper_backup::*;
 
 fn main() {
     let mut main_args: Vec<String> = env::args().collect();
@@ -63,6 +69,12 @@ fn main() {
 
                 menu_option(Menu::QrOnly(raw_string));
             }
+            val if val == "--entropy-check" => {
+                print!("\n{}", "> check entropy: ".bright_red());
+                let raw_string = catch_stdin();
+
+                menu_option(Menu::Entropy(raw_string));
+            }
             val if val == "--try" => {
                 print!("--try menu option.");
             }
@@ -78,7 +90,8 @@ fn main() {
                 && val != "--try"
                 && val != "--mnemonic"
                 && val != "--mnemonic-lock"
-                && val != "--lock-string" =>
+                && val != "--lock-string"
+                && val != "--entropy-check" =>
             {
                 not_in_the_menu.push_str(&val);
                 not_in_the_menu.push(' ');
