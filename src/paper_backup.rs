@@ -14,7 +14,9 @@ use std::{
     time::Duration,
 };
 
-use crate::{cipher_string::*, entropy_check::entropy_check};
+use crate::cipher_string::*;
+use crate::entropy_check::entropy_check;
+use crate::pass_gen::gen_password;
 
 pub enum Menu {
     Help,
@@ -31,6 +33,7 @@ pub enum Menu {
     Unlock,
     Convert,
     Entropy(String),
+    GenPassword(String),
 }
 
 macro_rules! clear_screen {
@@ -488,7 +491,11 @@ pub fn menu_option(menu_list: Menu) {
         }
         Menu::Entropy(arg) => {
             let ent = entropy_check(&arg);
-            println!("{:?}", ent.unwrap());
+            println!("\n{:#?}", ent.unwrap());
+        }
+        Menu::GenPassword(arg) => {
+            let gen_pass = gen_password(arg.parse::<usize>().unwrap());
+            println!("\n{}\n", gen_pass.unwrap());
         }
     }
 }
@@ -1102,9 +1109,9 @@ pub fn gpg_decrypt() -> Result<String, String> {
 }
 
 pub fn get_help() {
-    println!("\nrequire: ");
-    println!("       - rust-diceware binary from crate.io manually installed");
-    println!("");
+    // println!("\nrequire: ");
+    // println!("       - rust-diceware binary from crate.io manually installed");
+    // println!("");
     println!("usage: paper_backup [--help] [--eff]");
     println!("");
     println!("option: ");
@@ -1120,7 +1127,8 @@ pub fn get_help() {
     println!("       --qrcode-no-pgp  :  Generate qrcode only no pgp");
     println!("       --to-file        :  Generate qrcode only no pgp from file");
     println!("       --convert        :  Convertion string to ?");
-    println!("       --entropy-check  :  Check entropy value of password / string\n");
+    println!("       --entropy-check  :  Check entropy value of password / string");
+    println!("       --password       :  Password Generator not include Extended ASCII\n");
 }
 
 pub fn mnemonic_menu_list() -> Vec<String> {

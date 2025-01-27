@@ -16,9 +16,12 @@ colored = "2.0.0"
 eff-wordlist = "1.0.2"
 hex = "0.4.3"
 openssl = { version = "0.10.42", features = ["vendored"] }
+passwords = "3.1.16"
 progress_bar = "1.0.3"
 qr2term = "0.3.1"
 qrcode-png = "0.4.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.137"
 tiny-bip39 = "1.0.0"
 zxcvbn = "3.1.0"
 

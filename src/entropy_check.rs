@@ -1,3 +1,5 @@
+#[allow(unused)]
+use colored::Colorize;
 use zxcvbn::zxcvbn;
 
 #[derive(Debug)]
@@ -5,9 +7,11 @@ use zxcvbn::zxcvbn;
 pub struct EntCheck {
     guesses: u64,
     guesses_log10: f64,
-    crack_times: String,
+    crack_times_online_no_throttling_10_per_sec: String,
+    crack_times_online_throttling_100_per_sec: String,
+    crack_times_offline_slow_hashing_1e4_per_second: String,
+    crack_times_offline_fast_hashing_1e10_per_second: String,
     score: String,
-    manual: f64,
 }
 
 pub fn entropy_check(check: &str) -> Option<EntCheck> {
@@ -18,12 +22,35 @@ pub fn entropy_check(check: &str) -> Option<EntCheck> {
         Some(EntCheck {
             guesses: cal.guesses(),
             guesses_log10: cal.guesses_log10(),
-            crack_times: cal
+            crack_times_online_no_throttling_10_per_sec: cal
                 .crack_times()
                 .online_no_throttling_10_per_second()
                 .to_string(),
+            crack_times_online_throttling_100_per_sec: cal
+                .crack_times()
+                .online_throttling_100_per_hour()
+                .to_string(),
+            crack_times_offline_slow_hashing_1e4_per_second: cal
+                .crack_times()
+                .offline_slow_hashing_1e4_per_second()
+                .to_string(),
+            crack_times_offline_fast_hashing_1e10_per_second: cal
+                .crack_times()
+                .offline_fast_hashing_1e10_per_second()
+                .to_string(),
             score: cal.score().to_string(),
-            manual: ((check.len() as f64).log2()) * 12.0,
         })
     }
 }
+
+#[allow(dead_code)]
+pub fn entropy_check_pretty(check: &str) -> Option<String> {
+    if check.is_empty() {
+        None
+    } else {
+        // Some("".to_string())
+        todo!()
+    }
+}
+
+// todo!() calculate zxcvbn from keepassxc

@@ -5,6 +5,7 @@ use std::env;
 mod cipher_string;
 mod entropy_check;
 mod paper_backup;
+mod pass_gen;
 
 use crate::paper_backup::*;
 
@@ -64,16 +65,22 @@ fn main() {
                 menu_option(Menu::ToFile(path));
             }
             val if val == "--qrcode-no-pgp" => {
-                print!("\n{}", "> Input string: ".bright_red());
+                print!("\n{}", "> Input string: ".bright_yellow());
                 let raw_string = catch_stdin();
 
                 menu_option(Menu::QrOnly(raw_string));
             }
             val if val == "--entropy-check" => {
-                print!("\n{}", "> check entropy: ".bright_red());
+                print!("\n{}", "> check entropy: ".bright_yellow());
                 let raw_string = catch_stdin();
 
                 menu_option(Menu::Entropy(raw_string));
+            }
+            val if val == "--password" => {
+                print!("\n{}", "> password lenght: ".bright_red());
+                let raw_string = catch_stdin();
+
+                menu_option(Menu::GenPassword(raw_string));
             }
             val if val == "--try" => {
                 print!("--try menu option.");
@@ -91,7 +98,8 @@ fn main() {
                 && val != "--mnemonic"
                 && val != "--mnemonic-lock"
                 && val != "--lock-string"
-                && val != "--entropy-check" =>
+                && val != "--entropy-check"
+                && val != "--password" =>
             {
                 not_in_the_menu.push_str(&val);
                 not_in_the_menu.push(' ');
