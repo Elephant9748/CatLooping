@@ -1,7 +1,6 @@
 use std::io::{Cursor, Read};
 
 use base64_stream::{FromBase64Reader, ToBase64Reader};
-use cipher_crypt::{Cipher, Rot13, Vigenere};
 use colored::Colorize;
 use openssl::sha::sha256;
 
@@ -88,6 +87,7 @@ fn print_txt_base64_rot13(val: &str) {
 
 fn print_txt_vigenere(val: &str, key: &str) {
     let raw_txt_copy = val;
+    println!("{}", "|--> dont use space".bright_yellow());
     println!("{}", "|".bright_green());
     println!("{}", "|".bright_green());
     println!("{}{}", "--> Text     : ".bright_green(), raw_txt_copy);
@@ -102,6 +102,7 @@ fn print_txt_vigenere(val: &str, key: &str) {
 
 fn print_vigenere_txt(val: &str, key: &str) {
     let raw_txt_copy = val;
+    println!("{}", "|--> dont use space".bright_yellow());
     println!("{}", "|".bright_green());
     println!("{}", "|".bright_green());
     println!("{}{}", "--> Vigenere   : ".bright_green(), raw_txt_copy);
@@ -205,20 +206,20 @@ pub fn to_sha256(file: &str) -> Vec<String> {
 }
 
 pub fn to_vigenere(val: &str, key: &str) -> String {
-    let key_vigenere = Vigenere::new(String::from(key));
-    key_vigenere.encrypt(val).unwrap()
+    cipha::utils::vigenere_cipher(val, key)
 }
 
 pub fn from_vigenere(val: &str, key: &str) -> String {
-    let key_vigenere = Vigenere::new(String::from(key));
-    key_vigenere.decrypt(val).unwrap()
+    cipha::utils::vigenere_decipher(val, key)
 }
 
 #[allow(dead_code)]
 pub fn to_rot13(val: &str) -> String {
-    Rot13::encrypt(val)
+    let cipher = cipha::ciphers::Rot13Cipher::new();
+    cipher.encipher(val)
 }
 
 pub fn from_rot13(val: &str) -> String {
-    Rot13::decrypt(val)
+    let encipher = cipha::ciphers::Rot13Cipher::new();
+    encipher.decipher(val)
 }

@@ -14,9 +14,15 @@ use std::{
     time::Duration,
 };
 
-use crate::cipher_string::*;
-use crate::entropy_check::entropy_check;
-use crate::pass_gen::gen_password;
+use crate::{
+    cipher_string::*,
+    entropy_check::entropy_check,
+    pass_gen::gen_password,
+    steg::{
+        bytes_to_str, file_as_dynamic_image, file_as_image_buffer, save_image_buffer, str_to_bytes,
+        Decoder, Encoder,
+    },
+};
 
 pub enum Menu {
     Help,
@@ -34,6 +40,8 @@ pub enum Menu {
     Convert,
     Entropy(String),
     GenPassword(String),
+    EncodeImage(String, String),
+    DecodeImage(String),
 }
 
 macro_rules! clear_screen {
@@ -496,6 +504,39 @@ pub fn menu_option(menu_list: Menu) {
         Menu::GenPassword(arg) => {
             let gen_pass = gen_password(arg.parse::<usize>().unwrap());
             println!("\n{}\n", gen_pass.unwrap());
+        }
+        Menu::EncodeImage(arg, arg_path) => {
+            let msg = arg.to_string();
+            let payload = str_to_bytes(&msg);
+            let get_name_of_image = arg_path.to_owned();
+            let dest_img = file_as_dynamic_image(arg_path);
+            let enc = Encoder::new(payload.unwrap(), dest_img);
+
+            let mut name_img_with_ext: Vec<&str> = get_name_of_image.split("/").collect();
+            let mut name_img: Vec<&str> = name_img_with_ext.remove(1).split(".").collect();
+            let filename = name_img.remove(0).to_owned();
+
+            save_image_buffer(
+                enc.encode_alpha(),
+                format!("stegano/hide_secret_{}.png", filename).to_string(),
+            );
+
+            println!("{}", ":: save image buffer successfully!".bright_green());
+        }
+        Menu::DecodeImage(arg) => {
+            let enc_img = file_as_image_buffer(arg.to_string());
+            let dec = Decoder::new(enc_img);
+
+            let get_buffer = dec.decode_alpha();
+            let clean_buffer: Vec<u8> = get_buffer.into_iter().filter(|b| *b != 0xff_u8).collect();
+
+            let hide_msg = bytes_to_str(clean_buffer.as_slice());
+
+            println!(
+                "{}{}",
+                "Message reveal: ".bright_green(),
+                hide_msg.unwrap().bright_blue()
+            );
         }
     }
 }
@@ -1128,7 +1169,9 @@ pub fn get_help() {
     println!("       --to-file        :  Generate qrcode only no pgp from file");
     println!("       --convert        :  Convertion string to ?");
     println!("       --entropy-check  :  Check entropy value of password / string");
-    println!("       --password       :  Password Generator not include Extended ASCII\n");
+    println!("       --password       :  Password generator not include Extended ASCII");
+    println!("       --encode-image   :  Encode message to image");
+    println!("       --decode-image   :  Decode message to image\n");
 }
 
 pub fn mnemonic_menu_list() -> Vec<String> {

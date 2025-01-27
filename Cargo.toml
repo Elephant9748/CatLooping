@@ -1,6 +1,6 @@
 [package]
 name = "paper_backup"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,18 +10,19 @@ edition = "2021"
 
 [dependencies]
 base64-stream = "1.2.7"
-chrono = "0.4.22"
-cipher-crypt = "0.18.0"
-colored = "2.0.0"
-eff-wordlist = "1.0.2"
+chrono = "0.4.39"
+cipha = "0.1.0"
+colored = "2.2.0"
+eff-wordlist = "1.0.3"
 hex = "0.4.3"
-openssl = { version = "0.10.42", features = ["vendored"] }
+image = "0.25.5"
+openssl = { version = "0.10.70", features = ["vendored"] }
 passwords = "3.1.16"
-progress_bar = "1.0.3"
-qr2term = "0.3.1"
+progress_bar = "1.0.6"
+qr2term = "0.3.3"
 qrcode-png = "0.4.1"
 serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.137"
+serde_json = "1.0.138"
 tiny-bip39 = "1.0.0"
 zxcvbn = "3.1.0"
 

@@ -6,6 +6,7 @@ mod cipher_string;
 mod entropy_check;
 mod paper_backup;
 mod pass_gen;
+mod steg;
 
 use crate::paper_backup::*;
 
@@ -82,6 +83,34 @@ fn main() {
 
                 menu_option(Menu::GenPassword(raw_string));
             }
+            val if val == "--encode-image" => {
+                print!("\n{}", ":: > Hide messages: ".bright_red());
+                let raw_string = catch_stdin();
+
+                print!(
+                    "\n{}",
+                    ":: Get complete image name in stegano directory!".bright_blue()
+                );
+                print!("\n{}", ":: > Image file path: ".bright_red());
+                let raw_path = catch_stdin();
+
+                menu_option(Menu::EncodeImage(
+                    raw_string,
+                    format!("stegano/{}", raw_path).to_string(),
+                ));
+            }
+            val if val == "--decode-image" => {
+                print!(
+                    "\n{}",
+                    ":: Get complete image name in stegano directory!".bright_blue()
+                );
+                print!("\n{}", ":: > Image file path: ".bright_red());
+                let raw_string = catch_stdin();
+
+                menu_option(Menu::DecodeImage(
+                    format!("stegano/{}", raw_string).to_string(),
+                ));
+            }
             val if val == "--try" => {
                 print!("--try menu option.");
             }
@@ -99,6 +128,8 @@ fn main() {
                 && val != "--mnemonic-lock"
                 && val != "--lock-string"
                 && val != "--entropy-check"
+                && val != "--encode-image"
+                && val != "--decode-image"
                 && val != "--password" =>
             {
                 not_in_the_menu.push_str(&val);

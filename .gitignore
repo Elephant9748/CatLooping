@@ -1,6 +1,7 @@
 /target
 /lib/target
 /qrcode
+/stegano
 .zsh_history
 frost
 secret.gpg
