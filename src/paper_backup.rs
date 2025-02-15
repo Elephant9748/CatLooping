@@ -7,7 +7,7 @@ use qrcode_png::{Color as ColorQr, QrCode, QrCodeEcc};
 use std::{
     env::var_os,
     fs::{File, OpenOptions},
-    io::{self, BufRead, Write},
+    io::{self, BufRead, Read, Write},
     path::Path,
     process::{Command, Stdio},
     thread::sleep,
@@ -34,7 +34,8 @@ pub enum Menu {
     MnemonicGen(usize, String),
     MnemonicGenLock(usize, String),
     LockString(String),
-    ToFile(String),
+    FromFile(String),
+    FromFileLock(String),
     QrOnly(String),
     Unlock,
     Convert,
@@ -473,7 +474,46 @@ pub fn menu_option(menu_list: Menu) {
                 }
             }
         }
-        Menu::ToFile(arg) => {
+        Menu::FromFileLock(arg) => {
+            let gotleaf = readleaf(arg.as_str());
+
+            print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+            let forward_this = catch_stdin();
+            match forward_this {
+                x if x == "y" || x == "Y" => {
+                    storeleaf(gotleaf.unwrap());
+
+                    println!("{}", gpg_encrypt().unwrap().bright_green());
+
+                    let hash = to_sha256("secret.gpg");
+
+                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+
+                    println!(
+                        "{}",
+                        shred_helper_files(["secret.gpg", "frost"].to_vec())
+                            .unwrap()
+                            .bright_green()
+                    );
+                }
+                _ => {
+                    exit_this!();
+                }
+            }
+
+            // print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
+            // let forward_this = catch_stdin();
+            // match forward_this {
+            //     x if x == "y" || x == "Y" => {
+            //         qrcode_generate_to_file2(arg.as_str(), "qrfile");
+            //     }
+            //     _ => {
+            //         exit_this!();
+            //     }
+            // }
+        }
+        Menu::FromFile(arg) => {
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
             let forward_this = catch_stdin();
             match forward_this {
@@ -539,6 +579,27 @@ pub fn menu_option(menu_list: Menu) {
             );
         }
     }
+}
+
+fn readleaf(a: &str) -> std::io::Result<String> {
+    let mut leaf = File::open(a)?;
+    let mut leaf_contents = String::new();
+    leaf.read_to_string(&mut leaf_contents)?;
+    Ok(leaf_contents)
+}
+fn storeleaf(store_val: String) {
+    let path = Path::new("frost");
+    let show_path = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("> couldn't create path {}: {}", show_path, why),
+        Ok(file) => file,
+    };
+
+    match file.write_all(format!("{}\n", store_val).as_bytes()) {
+        Err(why) => panic!("> couldn't write to {}: {}", show_path, why),
+        Ok(_) => println!("{}{}", "> successfully wrote to ".purple(), show_path),
+    };
 }
 
 pub fn catch_stdin() -> String {
@@ -1014,7 +1075,7 @@ fn unlock_qrcode() {
         if confirm == "Y" || confirm == "y" {
             println!(
                 "{}{}",
-                "> passphrase: ".bright_green(),
+                "> passphrase: \n".bright_green(),
                 gpg_decrypt().unwrap().bright_yellow()
             );
         } else {
@@ -1134,12 +1195,14 @@ pub fn gpg_decrypt() -> Result<String, String> {
         .expect("> gpg_decrypt() failed!");
 
     let gpg_utf8 = String::from_utf8_lossy(&gpg.stdout);
+    // println!("{}", gpg_utf8);
     let gpg_utf8_err = String::from_utf8_lossy(&gpg.stderr);
-    let gpg_utf8_split = gpg_utf8.split("\n");
-    let gpg_utf8_vec: Vec<&str> = gpg_utf8_split.collect();
+    // let gpg_utf8_split = gpg_utf8.split("\n");
+    // let gpg_utf8_vec: Vec<&str> = gpg_utf8_split.collect();
 
     if !gpg_utf8.is_empty() {
-        Ok(format!("{}", gpg_utf8_vec[0]))
+        // Ok(format!("{}", gpg_utf8_vec[0]))
+        Ok(gpg_utf8.to_string())
     } else {
         Err(format!(
             "{}{}",
@@ -1166,7 +1229,8 @@ pub fn get_help() {
     println!("       --unlock         :  Unlock qrcode from directory qrcode/");
     println!("       --lock-string    :  Generate qrcode paper backup from string input");
     println!("       --qrcode-no-pgp  :  Generate qrcode only no pgp");
-    println!("       --to-file        :  Generate qrcode only no pgp from file");
+    println!("       --from-file-pgp  :  Generate qrcode with pgp from file");
+    println!("       --from-file      :  Generate qrcode only no pgp from file");
     println!("       --convert        :  Convertion string to ?");
     println!("       --entropy-check  :  Check entropy value of password / string");
     println!("       --password       :  Password generator not include Extended ASCII");

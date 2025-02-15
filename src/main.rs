@@ -60,10 +60,15 @@ fn main() {
                 let input_string_type = catch_stdin();
                 menu_option(Menu::LockString(input_string_type));
             }
-            val if val == "--to-file" => {
+            val if val == "--from-file" => {
                 print!("\n{}", "> Path of file: ".bright_green());
                 let path = catch_stdin();
-                menu_option(Menu::ToFile(path));
+                menu_option(Menu::FromFile(path));
+            }
+            val if val == "--from-file-pgp" => {
+                print!("\n{}", "> Path of file: ".bright_green());
+                let path = catch_stdin();
+                menu_option(Menu::FromFileLock(path));
             }
             val if val == "--qrcode-no-pgp" => {
                 print!("\n{}", "> Input string: ".bright_yellow());
@@ -128,6 +133,8 @@ fn main() {
                 && val != "--mnemonic-lock"
                 && val != "--lock-string"
                 && val != "--entropy-check"
+                && val != "--from-file-pgp"
+                && val != "--from-file"
                 && val != "--encode-image"
                 && val != "--decode-image"
                 && val != "--password" =>
