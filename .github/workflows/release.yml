@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  created-release:
+  create-release:
     name: create-release
     runs-on: ubuntu-latest
     steps:
