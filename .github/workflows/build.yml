@@ -14,11 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name install prerequisites
+
+    - name: install prerequisites
       run: |
         cargo install diceware
         command -v diceware
+
     - name: Run Build
       run: cargo b
+
     - name: Run Tests
       run: cargo t
