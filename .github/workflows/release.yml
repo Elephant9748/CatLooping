@@ -50,17 +50,17 @@ jobs:
       # systems.
       CARGO: cargo
       # When CARGO is set to CROSS, this is set to `--target matrix.target`.
-    TARGET_FLAGS:
+      TARGET_FLAGS:
       # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
       TARGET_DIR: ./target
       # Bump this as appropriate. We pin to a version to make sure CI
       # continues to work as cross releases in the past have broken things
       # in subtle ways.
-    CROSS_VERSION: 1.1.6
-    # Emit backtraces on panics.
-    RUST_BACKTRACE: 1
-    # Build static releases with PCRE2.
-    PCRE2_SYS_STATIC: 1
+      CROSS_VERSION: 1.1.6
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+      # Build static releases with PCRE2.
+      PCRE2_SYS_STATIC: 1
     strategy:
       fail-fast: false
       matrix:
