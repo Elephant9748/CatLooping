@@ -21,7 +21,7 @@ jobs:
         command -v diceware
 
     - name: Run Build
-      run: cargo b
+      run: cargo b -r
 
     - name: Run Tests
       run: cargo t -r
