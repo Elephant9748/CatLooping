@@ -153,15 +153,13 @@ jobs:
         shell: bash
         run: |
           version="${{ needs.create-release.outputs.version }}"
-          echo "ARCHIVE=ripgrep-$version-${{ matrix.target }}" >> $GITHUB_ENV
+          echo "ARCHIVE=paper_backup-$version-${{ matrix.target }}" >> $GITHUB_ENV
 
       - name: Creating directory for archive
         shell: bash
         run: |
-          mkdir -p "$ARCHIVE"/{complete,doc}
+          mkdir -p "$ARCHIVE"/{qrcode,stegano}
           cp "$BIN" "$ARCHIVE"/
-          cp {README.md,COPYING,UNLICENSE,LICENSE-MIT} "$ARCHIVE"/
-          cp {CHANGELOG.md,FAQ.md,GUIDE.md} "$ARCHIVE"/doc/
 
       - name: Build archive (Unix)
         shell: bash
