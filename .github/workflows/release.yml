@@ -133,9 +133,9 @@ jobs:
         run: |
           ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          bin="target/${{ matrix.target }}/release/rg.exe"
+          bin="target/${{ matrix.target }}/release/paper_backup.exe"
           else
-          bin="target/${{ matrix.target }}/release/rg"
+          bin="target/${{ matrix.target }}/release/paper_backup"
           fi
           echo "BIN=$bin" >> $GITHUB_ENV
 
@@ -162,17 +162,6 @@ jobs:
           cp "$BIN" "$ARCHIVE"/
           cp {README.md,COPYING,UNLICENSE,LICENSE-MIT} "$ARCHIVE"/
           cp {CHANGELOG.md,FAQ.md,GUIDE.md} "$ARCHIVE"/doc/
-
-      - name: Generate man page and completions (no emulation)
-        if: matrix.qemu == ''
-        shell: bash
-        run: |
-          "$BIN" --version
-          "$BIN" --generate complete-bash > "$ARCHIVE/complete/rg.bash"
-          "$BIN" --generate complete-fish > "$ARCHIVE/complete/rg.fish"
-          "$BIN" --generate complete-powershell > "$ARCHIVE/complete/_rg.ps1"
-          "$BIN" --generate complete-zsh > "$ARCHIVE/complete/_rg"
-          "$BIN" --generate man > "$ARCHIVE/doc/rg.1"
 
       - name: Build archive (Unix)
         shell: bash
