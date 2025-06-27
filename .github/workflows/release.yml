@@ -2,9 +2,9 @@ name: release
 on:
   workflow_dispatch:
     input:
-      tag:
+      based on tag:
         description: 'git tag'
-        requried: true
+        required: true
         default: ''
 
 permissions:
