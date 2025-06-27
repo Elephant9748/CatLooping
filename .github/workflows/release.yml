@@ -45,7 +45,6 @@ jobs:
       #     fi
 
       - name: Create GitHub release
-        env:
         run: gh release create $VERSION --draft --verify-tag --title paper_backup-$VERSION
     # outputs:
     #   version: ${{ env.VERSION }}
