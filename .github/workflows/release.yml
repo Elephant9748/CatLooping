@@ -8,6 +8,23 @@ on:
     tags:
     - "[0-9]+.[0-9]+.[0-9]+"
 
+env:
+  # For some builds, we use cross to test on 32-bit and big-endian
+  # systems.
+  CARGO: cargo
+  # When CARGO is set to CROSS, this is set to `--target matrix.target`.
+  TARGET_FLAGS:
+  # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
+  TARGET_DIR: ./target
+  # Bump this as appropriate. We pin to a version to make sure CI
+  # continues to work as cross releases in the past have broken things
+  # in subtle ways.
+  CROSS_VERSION: v0.2.5
+  # Emit backtraces on panics.
+  RUST_BACKTRACE: 1
+  # Build static releases with PCRE2.
+  # PCRE2_SYS_STATIC: 1
+
 jobs:
   create-release:
     name: create-release
@@ -41,22 +58,6 @@ jobs:
 
   build-release:
     name: build-release
-    env:
-      # For some builds, we use cross to test on 32-bit and big-endian
-      # systems.
-      CARGO: cargo
-      # When CARGO is set to CROSS, this is set to `--target matrix.target`.
-      TARGET_FLAGS:
-      # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
-      TARGET_DIR: ./target
-      # Bump this as appropriate. We pin to a version to make sure CI
-      # continues to work as cross releases in the past have broken things
-      # in subtle ways.
-      CROSS_VERSION: v0.2.5
-      # Emit backtraces on panics.
-      RUST_BACKTRACE: 1
-      # Build static releases with PCRE2.
-      # PCRE2_SYS_STATIC: 1
     needs: ["create-release"]
     runs-on: ${{ matrix.os }}
     strategy:
