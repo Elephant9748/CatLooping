@@ -26,6 +26,7 @@ use crate::{
 
 pub enum Menu {
     Help,
+    Version,
     Eff(usize),
     EffLock(usize),
     Diceware(String),
@@ -284,6 +285,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
 pub fn menu_option(menu_list: Menu) {
     match menu_list {
         Menu::Help => get_help(),
+        Menu::Version => get_version(),
         Menu::Diceware(arg) => {
             let dice = Dice::new(arg.parse::<u32>().unwrap(), "minilock", "-");
             let diceware = dice.generate_wordlist();
@@ -1212,6 +1214,13 @@ pub fn gpg_decrypt() -> Result<String, String> {
     }
 }
 
+pub fn get_version() {
+    let version = env!("CARGO_PKG_VERSION");
+    println!("-------------------");
+    println!("paper_backup {}", version);
+    println!("-------------------");
+}
+
 pub fn get_help() {
     // println!("\nrequire: ");
     // println!("       - rust-diceware binary from crate.io manually installed");
@@ -1220,6 +1229,7 @@ pub fn get_help() {
     println!("");
     println!("option: ");
     println!("       --help           :  Help command!");
+    println!("       --version        :  version");
     println!("       --eff            :  Generate Eff random wordlist");
     println!("       --eff-lock       :  Generate paper backup with Eff random wordlist");
     println!("       --diceware       :  Generate passphrase using diceware crate");

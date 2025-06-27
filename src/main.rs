@@ -19,6 +19,7 @@ fn main() {
     for arg in main_args {
         match arg {
             val if val == "--help" => menu_option(Menu::Help),
+            val if val == "--version" => menu_option(Menu::Version),
             val if val == "--diceware" => {
                 print!("{}", "\n> How many wordlist: ".bright_green());
                 let diceware_only = catch_stdin();

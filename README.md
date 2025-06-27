@@ -35,6 +35,7 @@ usage: paper_backup [option]
 
 option: 
         --help           :  Help command!
+        --version        :  version
         --eff            :  Generate Eff random wordlist
         --eff-lock       :  Generate paper backup with Eff random wordlist
         --diceware       :  Generate passphrase using diceware crate
