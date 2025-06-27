@@ -1,24 +1,12 @@
 name: release
+
 permissions:
   contents: write
-  actions: none
-  checks: none
-  deployments: none
-  packages: none
-  pull-requests: none
-  repository-projects: none
-  security-events: none
-  statuses: none
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'paper_backup version'
-        required: true
-        default: ''
-env:
-  VERSION: ${{ github.event.inputs.version }}
+  push:
+    tags:
+    - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   create-release:
@@ -28,26 +16,28 @@ jobs:
       - name: git checkout
       - uses: actions/checkout@v4
 
-      # - name: Get the release version from the tag
-      #   if: env.VERSION == ''
-      #   run: echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
-      #
-      # - name: Show the version
-      #   run: |
-      #     echo "version is: $VERSION"
-      #
-      # - name: Check that tag version and Cargo.toml version are the same
-      #   shell: bash
-      #   run: |
-      #     if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
-      #       echo "version does not match Cargo.toml" >&2
-      #       exit 1
-      #     fi
+      - name: Get the release version from the tag
+        if: env.VERSION == ''
+        run: echo "VERSION=${{ github.event.input.tag }}" >> $GITHUB_ENV
+
+      - name: Show the version
+        run: |
+          echo "version is: $VERSION"
+
+      - name: Check that tag version and Cargo.toml version are the same
+        shell: bash
+        run: |
+          if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
+            echo "version does not match Cargo.toml" >&2
+            exit 1
+          fi
 
       - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create $VERSION --draft --verify-tag --title paper_backup-$VERSION
-    # outputs:
-    #   version: ${{ env.VERSION }}
+    outputs:
+      version: ${{ env.VERSION }}
 
   build-release:
     name: build-release
@@ -160,7 +150,7 @@ jobs:
       - name: Determine archive name
         shell: bash
         run: |
-          version="${{ env.VERSION }}"
+          version="${{ needs.create-release.outputs.version }}"
           echo "ARCHIVE=paper_backup-$version-${{ matrix.target }}" >> $GITHUB_ENV
 
       - name: Creating directory for archive
@@ -183,5 +173,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          version="${{ env.VERSION }}"
+          version="${{ needs.create-release.outputs.version }}"
           gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
