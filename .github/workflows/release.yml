@@ -47,8 +47,8 @@ jobs:
       - name: Create GitHub release
         env:
         run: gh release create $VERSION --draft --verify-tag --title paper_backup-$VERSION
-    outputs:
-      version: ${{ env.VERSION }}
+    # outputs:
+    #   version: ${{ env.VERSION }}
 
   build-release:
     name: build-release
@@ -161,7 +161,7 @@ jobs:
       - name: Determine archive name
         shell: bash
         run: |
-          version="${{ needs.create-release.outputs.version }}"
+          version="${{ env.VERSION }}"
           echo "ARCHIVE=paper_backup-$version-${{ matrix.target }}" >> $GITHUB_ENV
 
       - name: Creating directory for archive
@@ -184,5 +184,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          version="${{ needs.create-release.outputs.version }}"
+          version="${{ env.VERSION }}"
           gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
