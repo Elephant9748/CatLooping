@@ -55,6 +55,9 @@ jobs:
       # continues to work as cross releases in the past have broken things
       # in subtle ways.
       CROSS_VERSION: v0.2.5
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+
     strategy:
       fail-fast: false
       matrix:
