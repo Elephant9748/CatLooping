@@ -44,6 +44,7 @@ pub enum Menu {
     GenPassword(String),
     EncodeImage(String, String),
     DecodeImage(String),
+    // PasswordMgr(String),
 }
 
 macro_rules! clear_screen {
@@ -579,7 +580,9 @@ pub fn menu_option(menu_list: Menu) {
                 "Message reveal: ".bright_green(),
                 hide_msg.unwrap().bright_blue()
             );
-        }
+        } // Menu::PasswordMgr(arg) => {
+          //     println!("{}", arg);
+          // }
     }
 }
 
