@@ -8,3 +8,4 @@ secret.gpg
 /src/.zsh_history
 /src/;
 qrcode_gen.py
+Cargo.lock
