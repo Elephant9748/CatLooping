@@ -866,14 +866,14 @@ fn qrcode_with_short_hash(
     let check_path_convert = Path::new(path_convert);
     let mut run_bin = Box::new("magisk");
     if check_path_magick.exists() {
-        *run_bin = "magisk";
-    } else {
-        return Err(format!("{}", "> convert doesnt exists ..!".bright_red()));
-    }
-    if check_path_convert.exists() {
+        *run_bin = "magick";
+    } else if check_path_convert.exists() {
         *run_bin = "convert";
     } else {
-        return Err(format!("{}", "> convert doesnt exists ..!".bright_red()));
+        return Err(format!(
+            "{}",
+            "> binaries imagemagick doesnt exists ..!".bright_red()
+        ));
     }
 
     let qrcode_short = Command::new(*run_bin)
