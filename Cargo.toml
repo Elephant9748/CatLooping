@@ -26,5 +26,8 @@ serde_json = "1.0.140"
 tiny-bip39 = "2.0.0"
 zxcvbn = "3.1.0"
 
+[build-dependencies]
+chrono = "0.4.41"
+
 
 
