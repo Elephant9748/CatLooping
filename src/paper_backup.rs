@@ -1219,9 +1219,9 @@ pub fn gpg_decrypt() -> Result<String, String> {
 
 pub fn get_version() {
     let version = env!("CARGO_PKG_VERSION");
-    println!("-------------------");
-    println!("paper_backup {}", version);
-    println!("-------------------");
+    let build_date = env!("DATE");
+    let git_head_hash = env!("GIT_HASH");
+    println!("paperpass {} ({} {})", version, git_head_hash, build_date);
 }
 
 pub fn get_help() {
