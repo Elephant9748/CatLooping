@@ -1,12 +1,19 @@
 name: release
 
+# on:
+#   push:
+#     tags:
+#       - "[0-9]+.[0-9]+.[0-9]+"
+#     # - "[0-9]+.[0-9]+.[0-9]+[a-z]+"
+#   # push:
+#   #   branches: [ "main" ]
 on:
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
-    # - "[0-9]+.[0-9]+.[0-9]+[a-z]+"
-  # push:
-  #   branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'paperpass tag'
+        required: true
+        default: '1.1.2'
 
 permissions:
   contents: write
@@ -20,7 +27,7 @@ jobs:
 
       - name: Get the release version from the tag
         if: env.VERSION == ''
-        run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+        run: echo "VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
 
       - name: Show the version
         run: |
@@ -37,7 +44,8 @@ jobs:
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create $VERSION --draft --verify-tag --latest --notes-from-tag --title paper_backup-$VERSION
+        # run: gh release create $VERSION --draft --verify-tag --latest --notes-from-tag --title paper_backup-$VERSION
+        run: gh release create $VERSION -d --latest --generate-notes --title paperbackup-$VERSION
     outputs:
       version: ${{ env.VERSION }}
 
