@@ -1,4 +1,4 @@
-## paper_backup
+## paperbackup
 
 **its just paper backup**
 
@@ -14,8 +14,8 @@
 
 **how to get**
 ```
-git clone [ this-repo ] paper_backup && \
-cd paper_backup && mkdir -p qrcode 
+git clone [ this-repo ] paperbackup && \
+cd paperbackup && mkdir -p qrcode 
 ```
 
 ```
@@ -27,11 +27,11 @@ cargo run -- --help
 ```
 cargo build --release
 ```
-located in `~/target/release/paper_backup`
+located in `~/target/release/paperbackup`
 
 **Usage :**
 ```
-usage: paper_backup [option]
+usage: paperbackup [option]
 
 option: 
         --help           :  Help command!
