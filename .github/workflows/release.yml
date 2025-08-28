@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'paperpass tag'
+        description: 'paperbackup tag'
         required: true
         default: '1.1.2'
 
@@ -44,7 +44,7 @@ jobs:
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # run: gh release create $VERSION --draft --verify-tag --latest --notes-from-tag --title paper_backup-$VERSION
+        # run: gh release create $VERSION --draft --verify-tag --latest --notes-from-tag --title paperbackup-$VERSION
         run: gh release create $VERSION -d --latest --generate-notes --title paperbackup-$VERSION
     outputs:
       version: ${{ env.VERSION }}
@@ -141,9 +141,9 @@ jobs:
         run: |
           ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          bin="target/${{ matrix.target }}/release/paper_backup.exe"
+          bin="target/${{ matrix.target }}/release/paperbackup.exe"
           else
-          bin="target/${{ matrix.target }}/release/paper_backup"
+          bin="target/${{ matrix.target }}/release/paperbackup"
           fi
           echo "BIN=$bin" >> $GITHUB_ENV
 
@@ -161,7 +161,7 @@ jobs:
         shell: bash
         run: |
           version="${{ needs.create-release.outputs.version }}"
-          echo "ARCHIVE=paper_backup-$version-${{ matrix.target }}" >> $GITHUB_ENV
+          echo "ARCHIVE=paperbackup-$version-${{ matrix.target }}" >> $GITHUB_ENV
 
       - name: Creating directory for archive
         shell: bash
