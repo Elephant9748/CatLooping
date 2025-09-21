@@ -1368,9 +1368,9 @@ mod tests {
 
     #[test]
     fn test_from_viginere() {
-        let key = "bishon";
-        let value = "NMKZOTF";
-        assert_eq!("MESSAGE", from_vigenere(value, key));
+        let key = "stick";
+        let value = "ttvcxs";
+        assert_eq!("banana", from_vigenere(value, key));
     }
 
     #[test]
