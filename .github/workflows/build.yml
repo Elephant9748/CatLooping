@@ -25,4 +25,4 @@ jobs:
       run: cargo b -r
 
     - name: Run Tests
-      run: cargo t -r
+      run: cargo t 
