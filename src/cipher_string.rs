@@ -4,7 +4,7 @@ use base64_stream::{FromBase64Reader, ToBase64Reader};
 use colored::Colorize;
 use openssl::sha::sha256;
 
-use crate::{catch_stdin, paper_backup::get_secret_gpg};
+use crate::{catch_stdin, clipboard::copy_clipboard, paper_backup::get_secret_gpg};
 
 pub fn main_convert() {
     println!("\n{}", "1. Txt-Base64-Rot13?".cyan());
@@ -17,20 +17,23 @@ pub fn main_convert() {
     match option_string {
         val if val == "1" => {
             print!("\n{}", "> Input string: ".cyan());
-            let input1 = catch_stdin();
-            print_txt_base64_rot13(input1.as_str())
+            let input = catch_stdin();
+            print_txt_base64_rot13(input.as_str());
+            copy_clipboard(to_txt_base64_rot13(input.as_str()).unwrap().as_str());
         }
         val if val == "2" => {
             print!("\n{}", "> Input string: ".cyan());
-            let input2 = catch_stdin();
-            print_rot13_base64_txt(input2.as_str())
+            let input = catch_stdin();
+            print_rot13_base64_txt(input.as_str());
+            copy_clipboard(from_rot13_base64_txt(input.as_str()).unwrap().as_str());
         }
         val if val == "3" => {
             print!("\n{}", "> Input String: ".cyan());
-            let input3 = catch_stdin();
+            let text = catch_stdin();
             print!("\n{}", "> key String: ".cyan());
-            let input4 = catch_stdin();
-            print_txt_vigenere(input3.as_str(), input4.as_str());
+            let key = catch_stdin();
+            print_txt_vigenere(text.as_str(), key.as_str());
+            copy_clipboard(to_vigenere(text.as_str(), key.as_str()).as_str());
         }
         val if val == "4" => {
             print!("\n{}", "> Input String: ".cyan());
@@ -38,6 +41,7 @@ pub fn main_convert() {
             print!("\n{}", "> key String: ".cyan());
             let b = catch_stdin();
             print_vigenere_txt(a.as_str(), b.as_str());
+            copy_clipboard(from_vigenere(a.as_str(), b.as_str()).as_str());
         }
         _ => println!("{}", "> Option not available!".bright_red()),
     }

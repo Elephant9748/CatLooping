@@ -3,6 +3,7 @@ use colored::Colorize;
 use std::env;
 
 mod cipher_string;
+mod clipboard;
 mod entropy_check;
 mod paper_backup;
 mod pass_gen;

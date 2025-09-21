@@ -16,6 +16,7 @@ use std::{
 
 use crate::{
     cipher_string::*,
+    clipboard::copy_clipboard,
     entropy_check::entropy_check,
     pass_gen::gen_password,
     steg::{
@@ -554,7 +555,8 @@ pub fn menu_option(menu_list: Menu) {
         }
         Menu::GenPassword(arg) => {
             let gen_pass = gen_password(arg.parse::<usize>().unwrap());
-            println!("\n{}\n", gen_pass.unwrap());
+            println!("\n{}\n", gen_pass.to_owned().unwrap());
+            copy_clipboard(gen_pass.unwrap().as_str());
         }
         Menu::EncodeImage(arg, arg_path) => {
             let msg = arg.to_string();
@@ -588,9 +590,8 @@ pub fn menu_option(menu_list: Menu) {
                 "Message reveal: ".bright_green(),
                 hide_msg.unwrap().bright_blue()
             );
-        } // Menu::PasswordMgr(arg) => {
-          //     println!("{}", arg);
-          // }
+            copy_clipboard(hide_msg.unwrap());
+        }
     }
 }
 
