@@ -401,11 +401,19 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::Notenum(arg) => {
-            println!(
-                "{} {}",
-                arg.bright_red(),
-                "> Menu Argument not available please check help: --help".bright_yellow()
-            );
+            if arg.is_empty() {
+                println!(
+                    "{} {}",
+                    "Empty".bright_red(),
+                    "> Menu Argument not available please check help: --help".bright_yellow()
+                );
+            } else {
+                println!(
+                    "{} {}",
+                    arg.bright_red(),
+                    "> Menu Argument not available please check help: --help".bright_yellow()
+                );
+            }
         }
         Menu::Convert => main_convert(),
         Menu::MnemonicGen(arg1, arg2) => {

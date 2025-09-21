@@ -4,7 +4,7 @@ use base64_stream::{FromBase64Reader, ToBase64Reader};
 use colored::Colorize;
 use openssl::sha::sha256;
 
-use crate::{catch_stdin, get_secret_gpg};
+use crate::{catch_stdin, paper_backup::get_secret_gpg};
 
 pub fn main_convert() {
     println!("\n{}", "1. Txt-Base64-Rot13?".cyan());
