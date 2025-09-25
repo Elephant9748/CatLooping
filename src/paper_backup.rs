@@ -17,7 +17,7 @@ use std::{
 use crate::{
     cipher_string::*,
     clipboard::copy_clipboard,
-    entropy_check::entropy_check,
+    entropy_check::{entrophy_calc, zxcvbn_check},
     pass_gen::gen_password,
     steg::{
         bytes_to_str, file_as_dynamic_image, file_as_image_buffer, save_image_buffer, str_to_bytes,
@@ -550,8 +550,13 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::Entropy(arg) => {
-            let ent = entropy_check(&arg);
-            println!("\n{:#?}", ent.unwrap());
+            let pass_strength = zxcvbn_check(&arg);
+            println!("\n\x1b[35m{:#?}", pass_strength.unwrap());
+            println!(
+                "{}{}",
+                "entrophy calc in bits: ".bright_green(),
+                entrophy_calc(&arg).to_string().bright_yellow()
+            );
         }
         Menu::GenPassword(arg) => {
             let gen_pass = gen_password(arg.parse::<usize>().unwrap());
