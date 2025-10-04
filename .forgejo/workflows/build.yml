@@ -30,8 +30,12 @@ jobs:
 
       - name: Setup rust toolchain
         uses: https://code.forgejo.org/theoparis/rust-toolchain@stable
+
       - name: Rust version
         run: rustc --version
+
+      - name: Diceware
+        run: cargo install diceware
 
       # - name: Run Build
       #   run: cargo b -r
