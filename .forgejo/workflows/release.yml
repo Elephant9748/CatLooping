@@ -1,0 +1,142 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+env:
+  BIN_NAME: paperbackup
+
+jobs:
+  create-release:
+    name: create-release-draft
+    runs-on: codeberg-tiny
+    container: archlinux:latest
+    steps:
+      - name: Create resolv.conf
+        run: |
+          set -ex
+          echo 'nameserver 1.1.1.1' >/etc/resolv.conf
+          echo 'nameserver 1.1.0.0' >>/etc/resolv.conf
+
+      - name: Install dependencies
+        shell: bash
+        run: | 
+          pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git 
+
+      - name: Checkout code
+        uses: https://code.forgejo.org/actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup rust toolchain
+        uses: https://code.forgejo.org/theoparis/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Forgejo Cli
+        shell: bash
+        run: |
+          cargo install forgejo-cli
+          fj version
+          echo "------------------------"
+          echo "Forgejo install success."
+
+      - name: Get latest tag
+        run: |
+          set -x
+          echo "TAG=$(git describe --abbrev=0)" >> $FORGEJO_ENV
+
+      - name: Create output 
+        id: getoutput
+        run: |
+          set -x 
+          echo "BIN=${{ env.BIN_NAME }}-${{ env.TAG }}" >> $FORGEJO_OUTPUT
+
+      - name: Create Codeberg Release
+        shell: bash
+        run: |
+          fj auth add-key ${{ env.FORGEJO_REPOSITORY_OWNER }} ${{ env.FORGEJO_TOKEN }}
+          fj release create --draft --prerelease  --tag ${{ env.TAG }} ${{ env.BIN_NAME }}-${{ env.TAG }}
+    outputs:
+      result: ${{ steps.getoutput.outputs.BIN }}
+
+  build-release:
+    strategy:
+      matrix:
+        info:
+          - build: x86_64_gnu
+            container: archlinux:latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            name: x86_64-linux
+          - build: x86_64-musl
+            container: archlinux:latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            name: x86_64-linux-musl
+
+    runs-on: codeberg-tiny
+    container: 
+      image: ${{ matrix.info.container }}
+    name: ${{ matrix.info.name }}
+    needs: [create-release]
+
+    steps:
+      - name: Create resolv.conf
+        run: |
+          set -ex
+          echo 'nameserver 1.1.1.1' >/etc/resolv.conf
+          echo 'nameserver 1.1.0.0' >>/etc/resolv.conf
+
+      - name: Install dependencies
+        shell: bash
+        run: | 
+          pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git
+
+      - name: Checkout code
+        uses: https://code.forgejo.org/actions/checkout@v5
+
+      - name: Setup rust toolchain
+        uses: https://code.forgejo.org/theoparis/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.info.rust }}
+          targets: ${{ matrix.info.target }}
+
+      - name: Rust version
+        run: |
+          rustc --version
+          rustup toolchain list
+          echo ${{ matrix.info.target }}
+
+      - name: Forgejo Cli
+        shell: bash
+        run: |
+          cargo install forgejo-cli
+          fj version
+          echo "------------------------"
+          echo "Forgejo install success."
+
+      - name: Build release
+        run: |
+          rustup target add ${{ matrix.info.target }}
+          pwd
+          cargo build --release --target ${{ matrix.info.target }}
+
+      - name: Packaging tar
+        shell: bash
+        run: |
+          cp target/${{ matrix.info.target }}/release/${{ env.BIN_NAME }} .
+          file ${{ env.BIN_NAME }}
+          echo "create tar"
+          echo "----------"
+          tar -zcvf ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz ${{ env.BIN_NAME }}
+          sha256sum ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz >> ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz.sha256
+
+      - name: Upload release
+        shell: bash
+        run: |
+          fj auth add-key ${{ env.FORGEJO_REPOSITORY_OWNER }} ${{ env.FORGEJO_TOKEN }}
+          fj release asset create ${{ needs.create-release.outputs.result }} ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz
+          fj release asset create ${{ needs.create-release.outputs.result }} ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz.sha256 ${{ env.BIN_NAME }}-${{ matrix.info.name }}.tar.gz.sha256
+
+
