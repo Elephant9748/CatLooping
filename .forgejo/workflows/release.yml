@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: | 
-          pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git 
+          pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git openssl
 
       - name: Checkout code
         uses: https://code.forgejo.org/actions/checkout@v5
