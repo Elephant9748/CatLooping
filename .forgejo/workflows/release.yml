@@ -75,7 +75,7 @@ jobs:
             target: x86_64-unknown-linux-musl
             name: x86_64-linux-musl
 
-    runs-on: codeberg-small
+    runs-on: codeberg-tiny-lazy
     container: 
       image: ${{ matrix.info.container }}
     name: ${{ matrix.info.name }}
