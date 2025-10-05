@@ -11,10 +11,11 @@ env:
   CARGO_TERM_COLOR: always
   GITHUB_URL_REPO: https://github.com/Elephant9748/CatLooping.git
   GITHUB_NUM_FILES: 6
+  BIN_NAME: paperbackup
 
 jobs:
   build:
-    runs-on: codeberg-tiny
+    runs-on: codeberg-small
     container: archlinux:latest
 
     steps:
@@ -29,6 +30,8 @@ jobs:
 
       - name: Checkout code
         uses: https://code.forgejo.org/actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup rust toolchain
         uses: https://code.forgejo.org/theoparis/rust-toolchain@stable
@@ -44,25 +47,42 @@ jobs:
       - name: Rust version
         run: rustc --version
 
+      - name: Get latest tag
+        run: |
+          set -x
+          echo "TAG=$(git describe --abbrev=0)" >> $FORGEJO_ENV
+
       - name: Create Codeberg Release
         shell: bash
         run: |
+          echo ${{ env.TAG }}
           fj auth add-key ${{ env.FORGEJO_REPOSITORY_OWNER }} ${{ env.FORGEJO_TOKEN }}
-          fj release create --draft --prerelease  --tag ${{ env.TAG }} ${{ env.BIN_NAME }}-${{ env.TAG }}
+          fj release create --draft --prerelease --tag ${{ env.TAG }} ${{ env.BIN_NAME }}-${{ env.TAG }}
       
-      - name: Attactment From Github
+      - name: Upload Relase
         shell: bash
         run: |
           git remote add github ${{ env.GITHUB_URL_REPO }}
-          gh auth login --with-token < ${{ secrets.T_GITHUB }}
+          echo $GITHUB_TOKEN
+          unset GITHUB_TOKEN
+          echo $GITHUB_TOKEN
+          echo ${{ secrets.T_GITHUB }} > gh_token
+          gh auth login --with-token < gh_token
           echo "Github Release File  "
           echo "---------------------"
-          gh release view --json assets -q '{name.assets.[].name}' 
-          echo "Get Each File of This"
-          echo "---------------------"
-          for i in {0..${{ env.GITHUB_NUM_FILES}}}
+          gh release view --json assets -q '[.assets.[].name]'
+          echo "Get File Relase From Github"
+          echo "---------------------------"
+          gh release download --pattern '*.sha256'
+          gh release download --pattern '*.gz'
+          ls -la
+          echo "Upload Attachment to Relase"
+          echo "---------------------------"
+          readarray -t asset_files < <(gh release view --json assets -q '[.assets.[].name]' | jq -r '.[]')
+          echo $((${#asset_files[*]} - 1))
+          for (( i=0; i<=$((${#asset_files[*]} - 1)); i++))
           do
-            echo "Number: $i"
+            fj release asset create ${{ env.BIN_NAME }}-${{ env.TAG }} ${asset_files[$i]} ${asset_files[$i]}
           done
 
 
