@@ -95,29 +95,10 @@ fn main() {
                         print!("\n{}", ":: > Hide messages: ".bright_red());
                         let raw_string = catch_stdin();
 
-                        print!(
-                            "\n{}",
-                            ":: Get complete image name in stegano directory!".bright_blue()
-                        );
-                        print!("\n{}", ":: > Image file path: ".bright_red());
-                        let raw_path = catch_stdin();
-
-                        menu_option(Menu::EncodeImage(
-                            raw_string,
-                            format!("stegano/{}", raw_path).to_string(),
-                        ));
+                        menu_option(Menu::EncodeImage(raw_string));
                     }
                     arg if arg == "--decode-image" => {
-                        print!(
-                            "\n{}",
-                            ":: Get complete image name in stegano directory!".bright_blue()
-                        );
-                        print!("\n{}", ":: > Image file path: ".bright_red());
-                        let raw_string = catch_stdin();
-
-                        menu_option(Menu::DecodeImage(
-                            format!("stegano/{}", raw_string).to_string(),
-                        ));
+                        menu_option(Menu::DecodeImage);
                     }
                     arg if arg == "--try" => {
                         print!("--try menu option.");

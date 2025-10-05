@@ -1,7 +1,7 @@
 use bip39::{Language, Mnemonic, MnemonicType};
 use chrono::prelude::*;
 use colored::Colorize;
-use progress_bar::*;
+// use progress_bar::*;
 use qr2term::*;
 use qrcode_png::{Color as ColorQr, QrCode, QrCodeEcc};
 use std::{
@@ -43,8 +43,8 @@ pub enum Menu {
     Convert,
     Entropy(String),
     GenPassword(String),
-    EncodeImage(String, String),
-    DecodeImage(String),
+    EncodeImage(String),
+    DecodeImage,
     // PasswordMgr(String),
 }
 
@@ -563,11 +563,108 @@ pub fn menu_option(menu_list: Menu) {
             println!("\n{}\n", gen_pass.to_owned().unwrap());
             copy_clipboard(gen_pass.unwrap().as_str());
         }
-        Menu::EncodeImage(arg, arg_path) => {
+        Menu::EncodeImage(arg) => {
+            println!(
+                "\n{}",
+                "If no input the default directory is \"qrcode/\"".bright_yellow()
+            );
+            println!("{}", "By press Enter!".bright_yellow());
+            print!("{}", "Input path of image : ".bright_green());
+            let path_image = catch_stdin();
+
+            let mut path_image_check = String::new();
+            if path_image.is_empty() {
+                path_image_check.push_str("qrcode");
+            } else {
+                path_image_check.push_str(path_image.as_str());
+            }
+
+            clear_screen!();
+            let ls = Command::new("ls")
+                .args(&["-a", format!("{}/", path_image_check).as_str()])
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect(
+                    format!(
+                        "{}",
+                        "> something wrong with ls command. (qrcode directory not found)"
+                            .bright_red()
+                    )
+                    .as_str(),
+                );
+            let ls_image = Command::new("grep")
+                .args(&["-v", "hide_secret_*"])
+                .stdin(Stdio::from(ls.stdout.unwrap()))
+                .stdout(Stdio::piped())
+                .output()
+                .expect(
+                    format!(
+                        "{}",
+                        "> something wrong with grep command. (qrcode directory not found)"
+                            .bright_red()
+                    )
+                    .as_str(),
+                );
+
+            let ls_image_utf8 = String::from_utf8_lossy(&ls_image.stdout);
+
+            if ls_image_utf8.is_empty() {
+                panic!("{}", "No qrcode directory".bright_red());
+            }
+
+            let ls_image_split = ls_image_utf8.split("\n");
+
+            let ls_image_vec: Vec<&str> = ls_image_split.collect();
+
+            let output: Vec<&str> = ls_image_vec
+                .clone()
+                .into_iter()
+                .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
+                .collect::<Vec<&str>>();
+
+            println!();
+            println!("{}", "List Image Want to Encode".yellow());
+            println!("{}", "-------------------------".yellow());
+
+            let mut index = Some(0);
+
+            while let Some(i) = index {
+                if i == output.len() {
+                    index = None;
+                } else if i % 2 == 0 {
+                    println!("{}. {}", i, output[i].bright_purple());
+                    index = Some(i + 1);
+                } else {
+                    println!("{}. {}", i, output[i].bright_yellow());
+                    index = Some(i + 1);
+                }
+            }
+
+            print!("{}", "\n> Pick file name by index: ".bright_green());
+
+            let pick_image = catch_stdin();
+            let pick_image_numeric = stdin_check_numeric(pick_image.as_str());
+            let mut path_image = String::new();
+            if pick_image_numeric {
+                let index = pick_image.trim().parse::<usize>().unwrap();
+                if path_image_check.is_empty() {
+                    path_image.push_str("qrcode");
+                    path_image.push_str("/");
+                    path_image.push_str(output[index.to_owned()]);
+                } else {
+                    path_image.push_str(path_image_check.as_str());
+                    path_image.push_str("/");
+                    path_image.push_str(output[index.to_owned()]);
+                }
+            } else {
+                println!("{}", "> Please pick by number".bright_red());
+            }
+
+            // Encode operations
             let msg = arg.to_string();
             let payload = str_to_bytes(&msg);
-            let get_name_of_image = arg_path.to_owned();
-            let dest_img = file_as_dynamic_image(arg_path);
+            let get_name_of_image = path_image.to_owned();
+            let dest_img = file_as_dynamic_image(path_image);
             let enc = Encoder::new(payload.unwrap(), dest_img);
 
             let mut name_img_with_ext: Vec<&str> = get_name_of_image.split("/").collect();
@@ -576,13 +673,109 @@ pub fn menu_option(menu_list: Menu) {
 
             save_image_buffer(
                 enc.encode_alpha(),
-                format!("stegano/hide_secret_{}.png", filename).to_string(),
+                format!("{}/hide_secret_{}.png", path_image_check, filename).to_string(),
             );
 
             println!("{}", ":: save image buffer successfully!".bright_green());
         }
-        Menu::DecodeImage(arg) => {
-            let enc_img = file_as_image_buffer(arg.to_string());
+        Menu::DecodeImage => {
+            println!(
+                "\n{}",
+                "If no input the default directory is \"qrcode/\"".bright_yellow()
+            );
+            println!("{}", "By press Enter!".bright_yellow());
+            print!("{}", "Input path of image : ".bright_green());
+            let path_image = catch_stdin();
+
+            let mut path_image_check = String::new();
+            if path_image.is_empty() {
+                path_image_check.push_str("qrcode");
+            } else {
+                path_image_check.push_str(path_image.as_str());
+            }
+
+            clear_screen!();
+            let ls = Command::new("ls")
+                .args(&["-a", format!("{}/", path_image_check).as_str()])
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect(
+                    format!(
+                        "{}",
+                        "> something wrong with ls command. (qrcode directory not found)"
+                            .bright_red()
+                    )
+                    .as_str(),
+                );
+            let ls_image = Command::new("grep")
+                .args(&["-i", "hide_secret_*"])
+                .stdin(Stdio::from(ls.stdout.unwrap()))
+                .stdout(Stdio::piped())
+                .output()
+                .expect(
+                    format!(
+                        "{}",
+                        "> something wrong with grep command. (qrcode directory not found)"
+                            .bright_red()
+                    )
+                    .as_str(),
+                );
+
+            let ls_image_utf8 = String::from_utf8_lossy(&ls_image.stdout);
+
+            if ls_image_utf8.is_empty() {
+                panic!("{}", "No qrcode directory".bright_red());
+            }
+
+            let ls_image_split = ls_image_utf8.split("\n");
+
+            let ls_image_vec: Vec<&str> = ls_image_split.collect();
+
+            let output: Vec<&str> = ls_image_vec
+                .clone()
+                .into_iter()
+                .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
+                .collect::<Vec<&str>>();
+
+            println!();
+            println!("{}", "List Image Contain Secret".yellow());
+            println!("{}", "-------------------------".yellow());
+
+            let mut index = Some(0);
+
+            while let Some(i) = index {
+                if i == output.len() {
+                    index = None;
+                } else if i % 2 == 0 {
+                    println!("{}. {}", i, output[i].bright_purple());
+                    index = Some(i + 1);
+                } else {
+                    println!("{}. {}", i, output[i].bright_yellow());
+                    index = Some(i + 1);
+                }
+            }
+
+            print!("{}", "\n> Pick file name by index: ".bright_green());
+
+            let pick_image = catch_stdin();
+            let pick_image_numeric = stdin_check_numeric(pick_image.as_str());
+            let mut path_image = String::new();
+            if pick_image_numeric {
+                let index = pick_image.trim().parse::<usize>().unwrap();
+                if path_image_check.is_empty() {
+                    path_image.push_str("qrcode");
+                    path_image.push_str("/");
+                    path_image.push_str(output[index.to_owned()]);
+                } else {
+                    path_image.push_str(path_image_check.as_str());
+                    path_image.push_str("/");
+                    path_image.push_str(output[index.to_owned()]);
+                }
+            } else {
+                println!("{}", "> Please pick by number".bright_red());
+            }
+
+            let enc_img = file_as_image_buffer(path_image.to_string());
             let dec = Decoder::new(enc_img);
 
             let get_buffer = dec.decode_alpha();
@@ -749,11 +942,11 @@ pub fn shred_helper_files(val: Vec<&str>) -> Result<String, String> {
         .expect("> shred_helper_files failed!");
 
     let shred_utf8 = String::from_utf8_lossy(&shred.stdout);
-    let shred_utf8_err = String::from_utf8_lossy(&shred.stderr);
 
-    let shred_copy_split = shred_utf8_err.split("\n");
-    let shred_copy_collect: Vec<&str> = shred_copy_split.collect();
-    process_bar(shred_copy_collect.len());
+    // let shred_utf8_err = String::from_utf8_lossy(&shred.stderr);
+    // let shred_copy_split = shred_utf8_err.split("\n");
+    // let shred_copy_collect: Vec<&str> = shred_copy_split.collect();
+    // process_bar(shred_copy_collect.len());
 
     if shred_utf8.is_empty() {
         Ok(format!("{}", "> shred successfully. ".green()))
@@ -786,18 +979,18 @@ pub fn reset_gpg_agent() -> Result<String, String> {
     }
 }
 
-pub fn process_bar(val: usize) {
-    init_progress_bar(val);
-    set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
-
-    let mut i = 0;
-    while i < val {
-        sleep(Duration::from_millis(15));
-        inc_progress_bar();
-        i += 1;
-    }
-    finalize_progress_bar();
-}
+// pub fn process_bar(val: usize) {
+//     init_progress_bar(val);
+//     set_progress_bar_action("*shreding", Color::Magenta, Style::Normal);
+//
+//     let mut i = 0;
+//     while i < val {
+//         sleep(Duration::from_millis(15));
+//         inc_progress_bar();
+//         i += 1;
+//     }
+//     finalize_progress_bar();
+// }
 
 // Need better generate qrcode
 pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str) {
@@ -1000,7 +1193,7 @@ where
 fn unlock_qrcode() {
     println!(
         "\n{}",
-        "If no input go to default directory qrcode/".bright_yellow()
+        "If no input the default directory is \"qrcode/\"".bright_yellow()
     );
     println!("{}", "By press Enter!".bright_yellow());
     print!("{}", "Input path of qrcode : ".bright_green());
