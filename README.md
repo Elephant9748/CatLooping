@@ -10,7 +10,6 @@
 
 - must have directory in current program running:
     * qrcode/
-    * stegano/
 ```
 
 **how to get**
