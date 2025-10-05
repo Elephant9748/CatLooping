@@ -57,7 +57,7 @@ jobs:
       version: ${{ env.VERSION }}
 
   build-release:
-    name: build-release
+    name: ${{ matrix.name }}
     needs: ["create-release"]
     runs-on: ${{ matrix.os }}
     env:
