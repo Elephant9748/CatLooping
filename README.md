@@ -6,6 +6,7 @@
 ```
 - imagemagick (package manager)
 - diceware (cargo install diceware)
+- wl-clipboard 
 
 - must have directory in current program running:
     * qrcode/
