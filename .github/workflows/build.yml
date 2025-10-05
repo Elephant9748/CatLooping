@@ -15,17 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Get latest tag
-      run: |
-        set -x
-        echo "TAG=$(git describe --abbrev=0)" >> $GITHUB_ENV
 
     - name: install prerequisites
       run: |
-        echo "tag: $TAG"
         cargo install diceware
         command -v diceware
 
