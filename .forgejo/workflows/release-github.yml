@@ -1,0 +1,68 @@
+name: release-github
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  GITHUB_URL_REPO: https://github.com/Elephant9748/CatLooping.git
+  GITHUB_NUM_FILES: 6
+
+jobs:
+  build:
+    runs-on: codeberg-tiny
+    container: archlinux:latest
+
+    steps:
+      - name: Create resolv.conf
+        run: |
+          set -ex
+          echo 'nameserver 1.1.1.1' >/etc/resolv.conf
+          echo 'nameserver 1.1.0.0' >>/etc/resolv.conf
+
+      - name: Install dependencies
+        run: pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git github-cli
+
+      - name: Checkout code
+        uses: https://code.forgejo.org/actions/checkout@v5
+
+      - name: Setup rust toolchain
+        uses: https://code.forgejo.org/theoparis/rust-toolchain@stable
+
+      - name: Forgejo Cli
+        shell: bash
+        run: |
+          cargo install forgejo-cli
+          fj version
+          echo "------------------------"
+          echo "Forgejo install success."
+
+      - name: Rust version
+        run: rustc --version
+
+      - name: Create Codeberg Release
+        shell: bash
+        run: |
+          fj auth add-key ${{ env.FORGEJO_REPOSITORY_OWNER }} ${{ env.FORGEJO_TOKEN }}
+          fj release create --draft --prerelease  --tag ${{ env.TAG }} ${{ env.BIN_NAME }}-${{ env.TAG }}
+      
+      - name: Attactment From Github
+        shell: bash
+        run: |
+          git remote add github ${{ env.GITHUB_URL_REPO }}
+          gh auth login --with-token < ${{ secrets.T_GITHUB }}
+          echo "Github Release File  "
+          echo "---------------------"
+          gh release view --json assets -q '{name.assets.[].name}' 
+          echo "Get Each File of This"
+          echo "---------------------"
+          for i in {0..${{ env.GITHUB_NUM_FILES}}}
+          do
+            echo "Number: $i"
+          done
+
+
