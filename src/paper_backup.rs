@@ -580,27 +580,14 @@ pub fn menu_option(menu_list: Menu) {
             }
 
             clear_screen!();
-            let ls = Command::new("ls")
+            let ls_image = Command::new("ls")
                 .args(&["-a", format!("{}/", path_image_check).as_str()])
-                .stdout(Stdio::piped())
-                .spawn()
-                .expect(
-                    format!(
-                        "{}",
-                        "> something wrong with ls command. (qrcode directory not found)"
-                            .bright_red()
-                    )
-                    .as_str(),
-                );
-            let ls_image = Command::new("grep")
-                .args(&["-v", "hide_secret_*"])
-                .stdin(Stdio::from(ls.stdout.unwrap()))
                 .stdout(Stdio::piped())
                 .output()
                 .expect(
                     format!(
                         "{}",
-                        "> something wrong with grep command. (qrcode directory not found)"
+                        "> something wrong with ls command. (qrcode directory not found)"
                             .bright_red()
                     )
                     .as_str(),
@@ -664,7 +651,7 @@ pub fn menu_option(menu_list: Menu) {
             let msg = arg.to_string();
             let payload = str_to_bytes(&msg);
             let get_name_of_image = path_image.to_owned();
-            let dest_img = file_as_dynamic_image(path_image);
+            let dest_img = file_as_dynamic_image(path_image.to_owned());
             let enc = Encoder::new(payload.unwrap(), dest_img);
 
             let mut name_img_with_ext: Vec<&str> = get_name_of_image.split("/").collect();
@@ -673,9 +660,10 @@ pub fn menu_option(menu_list: Menu) {
 
             save_image_buffer(
                 enc.encode_alpha(),
-                format!("{}/hide_secret_{}.png", path_image_check, filename).to_string(),
+                format!("{}/E_{}.png", path_image_check, filename).to_string(),
             );
 
+            println!("{}{}", ":: Save to -> ".bright_green(), &path_image);
             println!("{}", ":: save image buffer successfully!".bright_green());
         }
         Menu::DecodeImage => {
@@ -708,7 +696,7 @@ pub fn menu_option(menu_list: Menu) {
                     .as_str(),
                 );
             let ls_image = Command::new("grep")
-                .args(&["-i", "hide_secret_*"])
+                .args(&["E_*"])
                 .stdin(Stdio::from(ls.stdout.unwrap()))
                 .stdout(Stdio::piped())
                 .output()
@@ -724,7 +712,10 @@ pub fn menu_option(menu_list: Menu) {
             let ls_image_utf8 = String::from_utf8_lossy(&ls_image.stdout);
 
             if ls_image_utf8.is_empty() {
-                panic!("{}", "No qrcode directory".bright_red());
+                panic!(
+                    "{}",
+                    "No qrcode directory / image name doesnt have E_".bright_red()
+                );
             }
 
             let ls_image_split = ls_image_utf8.split("\n");
