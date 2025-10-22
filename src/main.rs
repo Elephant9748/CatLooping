@@ -22,8 +22,8 @@ fn main() {
         1 => {
             for m in main_args.to_owned() {
                 match m {
-                    arg if arg == "--help" => menu_option(Menu::Help),
-                    arg if arg == "--version" => menu_option(Menu::Version),
+                    arg if arg == "--help" || arg == "-h" => menu_option(Menu::Help),
+                    arg if arg == "--version" || arg == "-v" => menu_option(Menu::Version),
                     arg if arg == "--diceware" => {
                         print!("{}", "\n> How many wordlist: ".bright_green());
                         let diceware_only = catch_stdin();
