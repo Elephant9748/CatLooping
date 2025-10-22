@@ -5,7 +5,7 @@ use colored::Colorize;
 use qr2term::*;
 use qrcode_png::{Color as ColorQr, QrCode, QrCodeEcc};
 use std::{
-    env::var_os,
+    env::{self, var_os},
     fs::{File, OpenOptions},
     io::{self, BufRead, Read, Write},
     path::Path,
@@ -17,7 +17,9 @@ use std::{
 use crate::{
     cipher_string::*,
     clipboard::copy_clipboard,
+    config::{read_config_file, set_config, set_qrcode_path, show_config},
     entropy_check::{entrophy_calc, zxcvbn_check},
+    env_paper::ENV_CONFIG,
     pass_gen::gen_password,
     steg::{
         bytes_to_str, file_as_dynamic_image, file_as_image_buffer, save_image_buffer, str_to_bytes,
@@ -45,7 +47,8 @@ pub enum Menu {
     GenPassword(String),
     EncodeImage(String),
     DecodeImage,
-    // PasswordMgr(String),
+    Config,
+    ShowConfig,
 }
 
 macro_rules! clear_screen {
@@ -312,9 +315,15 @@ pub fn menu_option(menu_list: Menu) {
                     .italic()
             );
         }
+        Menu::Config => set_config(),
+        Menu::ShowConfig => show_config(),
         Menu::DicewareLock(arg) => {
             let phrase = Dice::new(arg.parse::<u32>().unwrap(), "minilock", "-");
             let passphrase = phrase.generate_wordlist();
+
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
 
             println!("{}", "> diceware".bright_cyan());
             println!("{}", "---------".bright_cyan());
@@ -338,20 +347,39 @@ pub fn menu_option(menu_list: Menu) {
             let forward_this = catch_stdin();
             if forward_this == "y" || forward_this == "Y" {
                 println!("{:?}", passphrase.find_passphrase().unwrap());
-                store_tofile(passphrase.find_passphrase().unwrap().to_string());
-
-                println!("{}", gpg_encrypt().unwrap().bright_green());
-
-                let hash = to_sha256("secret.gpg");
-
-                println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                store_tofile(
+                    passphrase.find_passphrase().unwrap().to_string(),
+                    readtoml.qrcode.path.to_string(),
+                );
 
                 println!(
                     "{}",
-                    shred_helper_files(["secret.gpg", "frost"].to_vec())
+                    gpg_encrypt(readtoml.qrcode.path.to_owned())
                         .unwrap()
                         .bright_green()
+                );
+
+                let hash = to_sha256(format!("{}/secret.gpg", readtoml.qrcode.path).as_str());
+
+                println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                qrcode_generate_to_file(
+                    hash[2].as_str(),
+                    hash[1].as_str(),
+                    hash[0].as_str(),
+                    readtoml.qrcode.path.to_owned(),
+                );
+
+                println!(
+                    "{}",
+                    shred_helper_files(
+                        [
+                            format!("{}/secret.gpg", readtoml.qrcode.path).as_str(),
+                            format!("{}/frost", readtoml.qrcode.path).as_str()
+                        ]
+                        .to_vec()
+                    )
+                    .unwrap()
+                    .bright_green()
                 );
             } else {
                 exit_this!();
@@ -372,6 +400,10 @@ pub fn menu_option(menu_list: Menu) {
             let init_eff = Eff::new(arg);
             let eff = init_eff.generate_eff().unwrap();
 
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             println!("\neff wordlist");
             println!("------------");
             println!("{}{}\n", "Output: ".green(), eff);
@@ -380,20 +412,36 @@ pub fn menu_option(menu_list: Menu) {
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    store_tofile(eff);
-
-                    println!("{}", gpg_encrypt().unwrap().bright_green());
-
-                    let hash = to_sha256("secret.gpg");
-
-                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                    store_tofile(eff, readtoml.qrcode.path.to_string());
 
                     println!(
                         "{}",
-                        shred_helper_files(["secret.gpg", "frost"].to_vec())
+                        gpg_encrypt(readtoml.qrcode.path.to_owned())
                             .unwrap()
                             .bright_green()
+                    );
+
+                    let hash = to_sha256(format!("{}/secret.gpg", readtoml.qrcode.path).as_str());
+
+                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                    qrcode_generate_to_file(
+                        hash[2].as_str(),
+                        hash[1].as_str(),
+                        hash[0].as_str(),
+                        readtoml.qrcode.path.to_owned(),
+                    );
+
+                    println!(
+                        "{}",
+                        shred_helper_files(
+                            [
+                                format!("{}/secret.gpg", readtoml.qrcode.path).as_str(),
+                                format!("{}/frost", readtoml.qrcode.path).as_str()
+                            ]
+                            .to_vec(),
+                        )
+                        .unwrap()
+                        .bright_green()
                     );
                 }
                 _ => {
@@ -429,6 +477,11 @@ pub fn menu_option(menu_list: Menu) {
         Menu::MnemonicGenLock(arg1, arg2) => {
             let init_mnemonic = Mnemonics::new(arg1, arg2.as_str());
             let mnemoniclock_val = init_mnemonic.generate_mnemonic_word().unwrap();
+
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             println!(
                 "\n{}{}",
                 "> Phrase: ".bright_green(),
@@ -439,20 +492,36 @@ pub fn menu_option(menu_list: Menu) {
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    store_tofile(mnemoniclock_val);
-
-                    println!("{}", gpg_encrypt().unwrap().bright_green());
-
-                    let hash = to_sha256("secret.gpg");
-
-                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                    store_tofile(mnemoniclock_val, readtoml.qrcode.path.to_string());
 
                     println!(
                         "{}",
-                        shred_helper_files(["secret.gpg", "frost"].to_vec())
+                        gpg_encrypt(readtoml.qrcode.path.to_owned())
                             .unwrap()
                             .bright_green()
+                    );
+
+                    let hash = to_sha256(format!("{}/secret.gpg", readtoml.qrcode.path).as_str());
+
+                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                    qrcode_generate_to_file(
+                        hash[2].as_str(),
+                        hash[1].as_str(),
+                        hash[0].as_str(),
+                        readtoml.qrcode.path.to_owned(),
+                    );
+
+                    println!(
+                        "{}",
+                        shred_helper_files(
+                            [
+                                format!("{}/secret.gpg", readtoml.qrcode.path).as_str(),
+                                format!("{}/frost", readtoml.qrcode.path).as_str()
+                            ]
+                            .to_vec()
+                        )
+                        .unwrap()
+                        .bright_green()
                     );
                 }
                 _ => {
@@ -461,24 +530,44 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::LockString(arg) => {
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    store_tofile(arg);
-
-                    println!("{}", gpg_encrypt().unwrap().bright_green());
-
-                    let hash = to_sha256("secret.gpg");
-
-                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                    store_tofile(arg, readtoml.qrcode.path.to_string());
 
                     println!(
                         "{}",
-                        shred_helper_files(["secret.gpg", "frost"].to_vec())
+                        gpg_encrypt(readtoml.qrcode.path.to_owned())
                             .unwrap()
                             .bright_green()
+                    );
+
+                    let hash = to_sha256(format!("{}/secret.gpg", readtoml.qrcode.path).as_str());
+
+                    println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
+                    qrcode_generate_to_file(
+                        hash[2].as_str(),
+                        hash[1].as_str(),
+                        hash[0].as_str(),
+                        readtoml.qrcode.path.to_owned(),
+                    );
+
+                    println!(
+                        "{}",
+                        shred_helper_files(
+                            [
+                                format!("{}/secret.gpg", readtoml.qrcode.path).as_str(),
+                                format!("{}/frost", readtoml.qrcode.path).as_str()
+                            ]
+                            .to_vec()
+                        )
+                        .unwrap()
+                        .bright_green()
                     );
                 }
                 _ => {
@@ -487,6 +576,10 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::FromFileLock(arg) => {
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             let gotleaf = readleaf(arg.as_str());
 
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
@@ -495,18 +588,34 @@ pub fn menu_option(menu_list: Menu) {
                 x if x == "y" || x == "Y" => {
                     storeleaf(gotleaf.unwrap());
 
-                    println!("{}", gpg_encrypt().unwrap().bright_green());
+                    println!(
+                        "{}",
+                        gpg_encrypt(readtoml.qrcode.path.to_owned())
+                            .unwrap()
+                            .bright_green()
+                    );
 
-                    let hash = to_sha256("secret.gpg");
+                    let hash = to_sha256(format!("{}/secret.gpg", readtoml.qrcode.path).as_str());
 
                     println!("{}{}", "> Hash thing: ".bright_red(), hash[0]);
-                    qrcode_generate_to_file(hash[2].as_str(), hash[1].as_str(), hash[0].as_str());
+                    qrcode_generate_to_file(
+                        hash[2].as_str(),
+                        hash[1].as_str(),
+                        hash[0].as_str(),
+                        readtoml.qrcode.path.to_owned(),
+                    );
 
                     println!(
                         "{}",
-                        shred_helper_files(["secret.gpg", "frost"].to_vec())
-                            .unwrap()
-                            .bright_green()
+                        shred_helper_files(
+                            [
+                                format!("{}/secret.gpg", readtoml.qrcode.path).as_str(),
+                                format!("{}/frost", readtoml.qrcode.path).as_str()
+                            ]
+                            .to_vec()
+                        )
+                        .unwrap()
+                        .bright_green()
                     );
                 }
                 _ => {
@@ -542,7 +651,7 @@ pub fn menu_option(menu_list: Menu) {
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    qrcode_generate_to_file(arg.as_str(), "qr0", "qr");
+                    qrcode_generate_to_file(arg.as_str(), "qr0", "qr", "".to_string());
                 }
                 _ => {
                     exit_this!();
@@ -817,11 +926,12 @@ pub fn catch_stdin() -> String {
     input.trim().to_string()
 }
 
-pub fn gpg_encrypt() -> Result<String, String> {
+pub fn gpg_encrypt(qrcodepath: String) -> Result<String, String> {
     let gpg = Command::new("gpg")
         .args(&[
             "-o",
-            "secret.gpg",
+            // "secret.gpg",
+            format!("{}/secret.gpg", qrcodepath).as_str(),
             "--symmetric",
             "--s2k-mode",
             "3",
@@ -832,7 +942,8 @@ pub fn gpg_encrypt() -> Result<String, String> {
             "--cipher-algo",
             "AES256",
             "--armor",
-            "frost",
+            // "frost",
+            format!("{}/frost", qrcodepath).as_str(),
         ])
         .stdout(Stdio::piped())
         .output()
@@ -851,12 +962,17 @@ pub fn gpg_encrypt() -> Result<String, String> {
     }
 }
 
-pub fn store_tofile(store_val: String) {
+pub fn store_tofile(store_val: String, temp_path: String) {
     let store_val_copy = store_val.clone();
 
     validate_passphrase(store_val_copy);
 
-    let path = Path::new("frost");
+    let mut complete_path = String::from("frost");
+    if !temp_path.is_empty() {
+        complete_path = temp_path + "/frost";
+    }
+
+    let path = Path::new(&complete_path);
     let show_path = path.display();
 
     let mut file = match File::create(&path) {
@@ -984,13 +1100,18 @@ pub fn reset_gpg_agent() -> Result<String, String> {
 // }
 
 // Need better generate qrcode
-pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str) {
+pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str, temp_path: String) {
     let utc: DateTime<Utc> = Utc::now();
     let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
     print!("{}", "> Name your qrcode file: ".bright_yellow());
-
     let name_png = catch_stdin();
-    let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
+
+    let mut qrcodepath = String::from("qrcode/");
+    if !temp_path.is_empty() {
+        qrcodepath = temp_path + "/";
+    }
+
+    let name_png_print = format!("{}{}_{}_{}.png", qrcodepath, val2, utc_to_png, name_png);
     let name_png_print_copy = name_png_print.clone();
     let mut qrcode = QrCode::new(val.as_bytes(), QrCodeEcc::Medium).unwrap();
 
@@ -1013,8 +1134,14 @@ pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str) {
         name_png_print_copy.magenta()
     );
 
-    let status_short =
-        qrcode_with_short_hash(val2, utc_to_png.as_str(), name_png.as_str(), val3).unwrap();
+    let status_short = qrcode_with_short_hash(
+        val2,
+        utc_to_png.as_str(),
+        name_png.as_str(),
+        val3,
+        qrcodepath,
+    )
+    .unwrap();
 
     println!("{}", status_short);
 }
@@ -1060,6 +1187,7 @@ fn qrcode_with_short_hash(
     utc_time: &str,
     name_png: &str,
     short_hash: &str,
+    qrcodepath: String,
 ) -> Result<String, String> {
     let path_magick = "/usr/bin/magick";
     let path_convert = "/usr/bin/convert";
@@ -1077,9 +1205,11 @@ fn qrcode_with_short_hash(
         ));
     }
 
+    println!("--> {}", qrcodepath);
+
     let qrcode_short = Command::new(*run_bin)
         .args(&[
-            format!("qrcode/{}_{}_{}.png", hash, utc_time, name_png).as_str(),
+            format!("{}{}_{}_{}.png", qrcodepath, hash, utc_time, name_png).as_str(),
             "-gravity",
             "center",
             "-scale",
@@ -1098,7 +1228,7 @@ fn qrcode_with_short_hash(
             "black",
             "-draw",
             format!("text 0,50 '{}-{}'", short_hash, name_png).as_str(),
-            format!("qrcode/{}_{}_{}.png", short_hash, utc_time, name_png).as_str(),
+            format!("{}{}_{}_{}.png", qrcodepath, short_hash, utc_time, name_png).as_str(),
         ])
         .stdout(Stdio::piped())
         .output()
@@ -1175,26 +1305,32 @@ pub fn get_secret_gpg(string_path: &str) -> String {
 
 fn read_a_file<T>(filename: T) -> io::Result<io::Lines<io::BufReader<File>>>
 where
-    T: AsRef<Path>,
+    T: AsRef<Path> + std::fmt::Display,
 {
-    let file = File::open(filename)?;
+    let file = File::open(filename.to_string()).expect("--> cant open read_a_file()");
     Ok(io::BufReader::new(file).lines())
 }
 
 fn unlock_qrcode() {
+    let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+    let readtoml = read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
     println!(
-        "\n{}",
-        "If no input the default directory is \"qrcode/\"".bright_yellow()
+        "\n{}{}",
+        "If no input the default directory is ".bright_yellow(),
+        readtoml.qrcode.path.bright_yellow()
     );
     println!("{}", "By press Enter!".bright_yellow());
     print!("{}", "Input path of qrcode : ".bright_green());
     let path_stdin_val = catch_stdin();
 
+    let homedir = set_qrcode_path(path_stdin_val.to_owned())
+        .expect("--> Failed check home dir unlock_qrcode()");
     let mut path_stdin_val_mut = String::new();
     if path_stdin_val.is_empty() {
-        path_stdin_val_mut.push_str("qrcode");
+        path_stdin_val_mut.push_str(format!("{}", readtoml.qrcode.path).as_str());
     } else {
-        path_stdin_val_mut.push_str(path_stdin_val.as_str());
+        path_stdin_val_mut.push_str(homedir.as_str());
     }
 
     clear_screen!();
@@ -1279,13 +1415,15 @@ fn unlock_qrcode() {
             println!(
                 "{}{}",
                 "> passphrase: \n".bright_green(),
-                gpg_decrypt().unwrap().bright_yellow()
+                gpg_decrypt(path_stdin_val_mut.to_owned())
+                    .unwrap()
+                    .bright_yellow()
             );
         } else {
             println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
         }
 
-        shred_helper_files(["qrcode_encode.gpg"].to_vec())
+        shred_helper_files([format!("{}/qrcode_encode.gpg", path_stdin_val_mut).as_str()].to_vec())
             .unwrap()
             .bright_green();
     } else {
@@ -1318,12 +1456,15 @@ fn unlock_qrcode() {
                 println!(
                     "{}{}",
                     "> passphrase: ".bright_green(),
-                    gpg_decrypt().unwrap().bright_yellow()
+                    gpg_decrypt(path_stdin_val_mut.to_owned())
+                        .unwrap()
+                        .bright_yellow()
                 );
-
-                shred_helper_files(["qrcode_encode.gpg"].to_vec())
-                    .unwrap()
-                    .bright_green();
+                shred_helper_files(
+                    [format!("{}/qrcode_encode.gpg", path_stdin_val_mut).as_str()].to_vec(),
+                )
+                .unwrap()
+                .bright_green();
             }
         } else {
             println!("{}{}", "> passphrase: ".bright_green(), "Nope".bright_red());
@@ -1378,7 +1519,7 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open("qrcode_encode.gpg")
+        .open(format!("{}/qrcode_encode.gpg", path_of_file))
         .unwrap();
 
     for line in zbar_utf8_vec.into_iter() {
@@ -1386,16 +1527,19 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
             .expect(format!("{}", "> something wrong with writeln!".bright_red()).as_str());
     }
 
-    let gpgterm = get_secret_gpg("qrcode_encode.gpg");
+    let gpgterm = get_secret_gpg(format!("{}/qrcode_encode.gpg", path_of_file_mut).as_str());
     println!("> {}", gpgterm.bright_yellow());
 }
 
-pub fn gpg_decrypt() -> Result<String, String> {
+pub fn gpg_decrypt(qrcodepath: String) -> Result<String, String> {
     let gpg = Command::new("gpg")
-        .args(&["--decrypt", "qrcode_encode.gpg"])
+        .args(&[
+            "--decrypt",
+            format!("{}/qrcode_encode.gpg", qrcodepath).as_str(),
+        ])
         .stdout(Stdio::piped())
         .output()
-        .expect("> gpg_decrypt() failed!");
+        .expect("--> gpg_decrypt() failed!");
 
     let gpg_utf8 = String::from_utf8_lossy(&gpg.stdout);
     // println!("{}", gpg_utf8);
@@ -1426,11 +1570,11 @@ pub fn get_help() {
     // println!("\nrequire: ");
     // println!("       - rust-diceware binary from crate.io manually installed");
     // println!("");
-    println!("usage: paper_backup [--help] [--eff]");
+    println!("Usage: paper_backup [options]");
     println!("");
-    println!("option: ");
-    println!("       --help           :  Help command!");
-    println!("       --version        :  version");
+    println!("Options: ");
+    println!("       --set-config     :  Set config & qrcode path");
+    println!("       --config         :  Show Config");
     println!("       --eff            :  Generate Eff random wordlist");
     println!("       --eff-lock       :  Generate paper backup with Eff random wordlist");
     println!("       --diceware       :  Generate passphrase using diceware crate");
@@ -1446,7 +1590,9 @@ pub fn get_help() {
     println!("       --entropy-check  :  Check entropy value of password / string");
     println!("       --password       :  Password generator not include Extended ASCII");
     println!("       --encode-image   :  Encode message to image");
-    println!("       --decode-image   :  Decode message to image\n");
+    println!("       --decode-image   :  Decode message to image");
+    println!("       --version        :  version");
+    println!("       --help           :  Help command!\n");
 }
 
 pub fn mnemonic_menu_list() -> Vec<String> {

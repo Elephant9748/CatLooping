@@ -4,7 +4,9 @@ use std::env;
 
 mod cipher_string;
 mod clipboard;
+mod config;
 mod entropy_check;
+mod env_paper;
 mod paper_backup;
 mod pass_gen;
 mod steg;
@@ -51,7 +53,7 @@ fn main() {
                             menu[1].to_string(),
                         ));
                     }
-                    arg if arg == "--mnemonic_lock" => {
+                    arg if arg == "--mnemonic-lock" => {
                         let menu = mnemonic_menu_list();
                         menu_option(Menu::MnemonicGenLock(
                             menu[0].trim().parse().unwrap(),
@@ -100,8 +102,11 @@ fn main() {
                     arg if arg == "--decode-image" => {
                         menu_option(Menu::DecodeImage);
                     }
-                    arg if arg == "--try" => {
-                        print!("--try menu option.");
+                    arg if arg == "--set-config" => {
+                        menu_option(Menu::Config);
+                    }
+                    arg if arg == "--config" => {
+                        menu_option(Menu::ShowConfig);
                     }
                     arg if arg == "--unlock" => menu_option(Menu::Unlock),
                     arg if arg == "--convert" => menu_option(Menu::Convert),
