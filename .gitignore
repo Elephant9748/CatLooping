@@ -1,11 +1,10 @@
+Cargo.lock
+qrcode_gen.py
+.zsh_history
+frost
+secret.gpg
 /target
 /lib/target
 /qrcode
 /stegano
-.zsh_history
-frost
-secret.gpg
 /src/.zsh_history
-/src/;
-qrcode_gen.py
-Cargo.lock
