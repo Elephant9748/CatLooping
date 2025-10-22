@@ -7,9 +7,6 @@
 - imagemagick (package manager)
 - diceware (cargo install diceware)
 - wl-clipboard 
-
-- must have directory in current program running:
-    * qrcode/
 ```
 
 **how to get**
@@ -30,6 +27,10 @@ cargo build --release
 located in `~/target/release/paperbackup`
 
 **Usage :**
+- Set config
+    ```
+    paperbackup --set-config
+    ```
 ```
 usage: paperbackup [option]
 
