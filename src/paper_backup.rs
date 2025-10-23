@@ -673,6 +673,10 @@ pub fn menu_option(menu_list: Menu) {
             copy_clipboard(gen_pass.unwrap().as_str());
         }
         Menu::EncodeImage(arg) => {
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             println!(
                 "\n{}",
                 "If no input the default directory is \"qrcode/\"".bright_yellow()
@@ -681,11 +685,13 @@ pub fn menu_option(menu_list: Menu) {
             print!("{}", "Input path of image : ".bright_green());
             let path_image = catch_stdin();
 
+            let homedir = set_qrcode_path(path_image.to_owned())
+                .expect("--> Failed check home dir EncodeImage()");
             let mut path_image_check = String::new();
             if path_image.is_empty() {
-                path_image_check.push_str("qrcode");
+                path_image_check.push_str(readtoml.qrcode.path.as_str());
             } else {
-                path_image_check.push_str(path_image.as_str());
+                path_image_check.push_str(homedir.as_str());
             }
 
             clear_screen!();
@@ -743,15 +749,9 @@ pub fn menu_option(menu_list: Menu) {
             let mut path_image = String::new();
             if pick_image_numeric {
                 let index = pick_image.trim().parse::<usize>().unwrap();
-                if path_image_check.is_empty() {
-                    path_image.push_str("qrcode");
-                    path_image.push_str("/");
-                    path_image.push_str(output[index.to_owned()]);
-                } else {
-                    path_image.push_str(path_image_check.as_str());
-                    path_image.push_str("/");
-                    path_image.push_str(output[index.to_owned()]);
-                }
+                path_image.push_str(path_image_check.as_str());
+                path_image.push_str("/");
+                path_image.push_str(output[index.to_owned()]);
             } else {
                 println!("{}", "> Please pick by number".bright_red());
             }
@@ -763,32 +763,44 @@ pub fn menu_option(menu_list: Menu) {
             let dest_img = file_as_dynamic_image(path_image.to_owned());
             let enc = Encoder::new(payload.unwrap(), dest_img);
 
-            let mut name_img_with_ext: Vec<&str> = get_name_of_image.split("/").collect();
-            let mut name_img: Vec<&str> = name_img_with_ext.remove(1).split(".").collect();
-            let filename = name_img.remove(0).to_owned();
+            let name_img_with_ext: Vec<&str> = get_name_of_image.split("/").collect();
+            let filename = name_img_with_ext.last().unwrap();
 
             save_image_buffer(
                 enc.encode_alpha(),
-                format!("{}/E_{}.png", path_image_check, filename).to_string(),
+                format!("{}/E_{}", path_image_check, filename).to_string(),
             );
 
-            println!("{}{}", ":: Save to -> ".bright_green(), &path_image);
+            println!(
+                "{}{}/{}{}",
+                ":: Save to -> ".bright_green(),
+                &path_image_check,
+                "E_".magenta(),
+                &filename.magenta(),
+            );
             println!("{}", ":: save image buffer successfully!".bright_green());
         }
         Menu::DecodeImage => {
-            println!(
-                "\n{}",
-                "If no input the default directory is \"qrcode/\"".bright_yellow()
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
+            print!(
+                "\n{}{}",
+                "If no input the default directory is ".bright_yellow(),
+                readtoml.qrcode.path.to_owned().magenta()
             );
-            println!("{}", "By press Enter!".bright_yellow());
-            print!("{}", "Input path of image : ".bright_green());
+            println!("{}", " By press Enter!".bright_yellow());
+            print!("{}", "\nInput path of image : ".bright_green());
             let path_image = catch_stdin();
 
+            let homedir = set_qrcode_path(path_image.to_owned())
+                .expect("--> Failed check home dir DecodeImage()");
             let mut path_image_check = String::new();
             if path_image.is_empty() {
-                path_image_check.push_str("qrcode");
+                path_image_check.push_str(readtoml.qrcode.path.as_str());
             } else {
-                path_image_check.push_str(path_image.as_str());
+                path_image_check.push_str(homedir.as_str());
             }
 
             clear_screen!();
@@ -1315,13 +1327,13 @@ fn unlock_qrcode() {
     let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
     let readtoml = read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
 
-    println!(
+    print!(
         "\n{}{}",
         "If no input the default directory is ".bright_yellow(),
-        readtoml.qrcode.path.bright_yellow()
+        readtoml.qrcode.path.magenta()
     );
-    println!("{}", "By press Enter!".bright_yellow());
-    print!("{}", "Input path of qrcode : ".bright_green());
+    println!("{}", " By press Enter!".bright_yellow());
+    print!("{}", "\nInput path of qrcode : ".bright_green());
     let path_stdin_val = catch_stdin();
 
     let homedir = set_qrcode_path(path_stdin_val.to_owned())
