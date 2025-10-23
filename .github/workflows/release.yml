@@ -176,7 +176,7 @@ jobs:
       - name: Creating directory for archive
         shell: bash
         run: |
-          mkdir -p "$ARCHIVE"/qrcode
+          # mkdir -p "$ARCHIVE"/qrcode
           cp "$BIN" "$ARCHIVE"/
 
       - name: Build archive (Unix)
