@@ -22,8 +22,8 @@ use crate::{
     env_paper::ENV_CONFIG,
     pass_gen::gen_password,
     steg::{
-        bytes_to_str, file_as_dynamic_image, file_as_image_buffer, save_image_buffer, str_to_bytes,
-        Decoder, Encoder,
+        Decoder, Encoder, bytes_to_str, file_as_dynamic_image, file_as_image_buffer,
+        save_image_buffer, str_to_bytes,
     },
 };
 
@@ -1589,11 +1589,11 @@ pub fn get_help() {
     // println!("       - rust-diceware binary from crate.io manually installed");
     // println!("");
     println!(
-        "{}{}",
+        "\n{}{}",
         "Usage:".bright_green(),
         "\tpaperbackup [OPTIONS]".bright_blue()
     );
-    println!("{}", "Options: ".bright_green());
+    println!("\n{}", "Options: ".bright_green());
     println!(
         "{}{}",
         "\t--set-config".bright_blue(),
@@ -1690,6 +1690,7 @@ pub fn get_help() {
         "\t--help".bright_blue(),
         "\t\t\tHelp command!\n".white()
     );
+    print!("{}", "Version: ".bright_yellow());
     get_version();
 }
 
@@ -1853,11 +1854,7 @@ mod tests {
         let mut val = false;
         for el in dice {
             let n = stdin_check_numeric(el.as_str());
-            if !n {
-                val = !n
-            } else {
-                val = n
-            }
+            if !n { val = !n } else { val = n }
         }
         assert!(val);
     }

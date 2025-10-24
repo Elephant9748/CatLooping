@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use image::{open, DynamicImage, ImageBuffer, Rgba};
+use image::{DynamicImage, ImageBuffer, Rgba, open};
 
 // Encoding Image
 // ==========================================================================
@@ -181,8 +181,7 @@ pub fn bytes_to_str(bytes: &[u8]) -> Option<&str> {
 
 #[allow(dead_code)]
 pub fn file_as_dynamic_image(filename: String) -> DynamicImage {
-    let img = open(Path::new(&filename)).unwrap();
-    img
+    open(Path::new(&filename)).unwrap()
 }
 
 #[allow(dead_code)]
