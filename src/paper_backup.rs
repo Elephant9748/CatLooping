@@ -1690,7 +1690,7 @@ pub fn get_help() {
         "\t--help".bright_blue(),
         "\t\t\tHelp command!\n".white()
     );
-    print!("{}", "Version: ".bright_yellow());
+    print!("{}", "Version: ".bright_green());
     get_version();
 }
 
