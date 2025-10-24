@@ -579,13 +579,16 @@ pub fn menu_option(menu_list: Menu) {
             let readtoml =
                 read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
 
-            let gotleaf = readleaf(arg.as_str());
+            let homedir =
+                set_qrcode_path(arg.to_owned()).expect("--> Failed check home dir unlock_qrcode()");
+
+            let gotleaf = readleaf(homedir.as_str());
 
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    storeleaf(gotleaf.unwrap());
+                    storeleaf(gotleaf.unwrap(), format!("{}/frost", readtoml.qrcode.path));
 
                     println!(
                         "{}",
@@ -623,11 +626,24 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::FromFile(arg) => {
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
+            let homedir =
+                set_qrcode_path(arg.to_owned()).expect("--> Failed check home dir unlock_qrcode()");
+            let mut path_stdin_val_mut = String::new();
+            if arg.is_empty() {
+                path_stdin_val_mut.push_str(readtoml.qrcode.path.as_str());
+            } else {
+                path_stdin_val_mut.push_str(homedir.as_str());
+            }
+
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    qrcode_generate_to_file2(arg.as_str(), "qrfile");
+                    qrcode_generate_to_file2(path_stdin_val_mut.as_str(), "qrfile");
                 }
                 _ => {
                     exit_this!();
@@ -906,8 +922,8 @@ fn readleaf(a: &str) -> std::io::Result<String> {
     leaf.read_to_string(&mut leaf_contents)?;
     Ok(leaf_contents)
 }
-fn storeleaf(store_val: String) {
-    let path = Path::new("frost");
+fn storeleaf(store_val: String, temp_path: String) {
+    let path = Path::new(&temp_path);
     let show_path = path.display();
 
     let mut file = match File::create(path) {
@@ -1152,6 +1168,9 @@ pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str, temp_path: Str
 
 // for pure file to qrcode
 pub fn qrcode_generate_to_file2(file: &str, val2: &str) {
+    let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+    let readtoml = read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
     let utc: DateTime<Utc> = Utc::now();
     let utc_to_png = utc.format("%m%d%y_%H%M").to_string();
     print!("{}", "> Name your qrcode file: ".bright_yellow());
@@ -1159,7 +1178,10 @@ pub fn qrcode_generate_to_file2(file: &str, val2: &str) {
     let content_file = std::fs::read_to_string(file).expect("read_file failed !");
 
     let name_png = catch_stdin();
-    let name_png_print = format!("qrcode/{}_{}_{}.png", val2, utc_to_png, name_png);
+    let name_png_print = format!(
+        "{}/{}_{}_{}.png",
+        readtoml.qrcode.path, val2, utc_to_png, name_png
+    );
     let name_png_print_copy = name_png_print.clone();
     let mut qrcode = QrCode::new(content_file.as_bytes(), QrCodeEcc::Medium).unwrap();
 
