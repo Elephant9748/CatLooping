@@ -139,7 +139,7 @@ impl Decoder {
 // more helper
 // ===============================================================
 #[allow(dead_code)]
-pub fn str_to_bytes<'a>(word: &'a String) -> Option<&'a [u8]> {
+pub fn str_to_bytes(word: &String) -> Option<&[u8]> {
     if word.is_empty() {
         None
     } else {
@@ -181,25 +181,25 @@ pub fn bytes_to_str(bytes: &[u8]) -> Option<&str> {
 
 #[allow(dead_code)]
 pub fn file_as_dynamic_image(filename: String) -> DynamicImage {
-    let img = open(&Path::new(&filename)).unwrap();
+    let img = open(Path::new(&filename)).unwrap();
     img
 }
 
 #[allow(dead_code)]
 pub fn bytes_to_file<'a>(bytes: &[u8], mut file: &'a File) -> &'a File {
     let _ = file.write_all(bytes);
-    &file
+    file
 }
 
 #[allow(dead_code)]
 pub fn file_as_image_buffer(filename: String) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-    let img = open(&Path::new(&filename)).unwrap();
+    let img = open(Path::new(&filename)).unwrap();
     img.to_rgba8()
 }
 
 #[allow(dead_code)]
 pub fn save_image_buffer(img: ImageBuffer<Rgba<u8>, Vec<u8>>, filename: String) {
     let out_path = &Path::new(&filename);
-    let _ = img.save(out_path).unwrap();
+    img.save(out_path).unwrap();
 }
 // ===============================================================

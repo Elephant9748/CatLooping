@@ -23,7 +23,7 @@ pub fn copy_clipboard(text: &str) {
             println!(
                 "{}{}",
                 ">".bright_yellow(),
-                " doesnt have wl-clipboard".yellow()
+                " doesnt have wl-clipboard".white()
             )
         } else {
             Command::new("wl-copy")
@@ -39,7 +39,7 @@ pub fn copy_clipboard(text: &str) {
                     )
                 })
                 .wait()
-                .expect("Failed to wait wl-copy Command on copy_clipboard()");
+                .expect("--> Failed to wait copy_clipboard()");
         }
     } else {
         println!(
@@ -48,7 +48,6 @@ pub fn copy_clipboard(text: &str) {
             " Not in wayland session".bright_red()
         );
     }
-    // clear clipboard default 30s
     clear_clipboard();
 }
 pub fn clear_clipboard() {
@@ -61,13 +60,13 @@ pub fn clear_clipboard() {
             ])
             .stdout(Stdio::piped())
             .spawn()
-            .expect("--> Failed to run sh sleep clear_clipboar()")
-            .wait()
-            .expect("--> Failed to wait sh Thread spwan clear_clipboar()")
+            .expect("--> Thread failed No bash found clear_clipboard()")
+            .try_wait()
+            .expect("--> Failed to try_wait clear_clipboard()");
     });
 
     if thread_clear_clipboard.join().is_ok() {
-        print!(
+        println!(
             "{}{}{}",
             ">".bright_yellow(),
             " Clear clipboard  after".bright_yellow(),
