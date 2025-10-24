@@ -621,17 +621,6 @@ pub fn menu_option(menu_list: Menu) {
                     exit_this!();
                 }
             }
-
-            // print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
-            // let forward_this = catch_stdin();
-            // match forward_this {
-            //     x if x == "y" || x == "Y" => {
-            //         qrcode_generate_to_file2(arg.as_str(), "qrfile");
-            //     }
-            //     _ => {
-            //         exit_this!();
-            //     }
-            // }
         }
         Menu::FromFile(arg) => {
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
@@ -646,11 +635,15 @@ pub fn menu_option(menu_list: Menu) {
             }
         }
         Menu::QrOnly(arg) => {
+            let readenv = env::var(ENV_CONFIG).expect("--> Failed to read env Menu::EffLock");
+            let readtoml =
+                read_config_file(&readenv).expect("--> Failed to read toml Menu::EffLock");
+
             print!("{}", "> do you want to continue [y/n]: ".bright_yellow());
             let forward_this = catch_stdin();
             match forward_this {
                 x if x == "y" || x == "Y" => {
-                    qrcode_generate_to_file(arg.as_str(), "qr0", "qr", "".to_string());
+                    qrcode_generate_to_file(arg.as_str(), "qr0", "qr", readtoml.qrcode.path);
                 }
                 _ => {
                     exit_this!();
