@@ -1581,7 +1581,7 @@ pub fn get_version() {
     let version = env!("CARGO_PKG_VERSION");
     let build_date = env!("DATE");
     let git_head_hash = env!("GIT_HASH");
-    println!("{} {} ({} {})", name, version, git_head_hash, build_date);
+    println!("{}-{} ({} {})", name, version, git_head_hash, build_date);
 }
 
 pub fn get_help() {
@@ -1690,19 +1690,7 @@ pub fn get_help() {
         "\t--help".bright_blue(),
         "\t\t\tHelp command!\n".white()
     );
-
-    let name = env!("CARGO_PKG_NAME");
-    let version = env!("CARGO_PKG_VERSION");
-    let build_date = env!("DATE");
-    let git_head_hash = env!("GIT_HASH");
-    println!(
-        "{}{}{}{}{}",
-        "Version: ".bright_green(),
-        name,
-        version,
-        build_date,
-        git_head_hash
-    );
+    get_version();
 }
 
 pub fn mnemonic_menu_list() -> Vec<String> {
