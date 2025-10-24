@@ -111,13 +111,7 @@ fn init_done(config: Configs) {
 fn check_valid(val: Valid) -> bool {
     match val {
         Valid::Num(a) => a.as_str().chars().all(|c| c.is_numeric()),
-        Valid::Path(a) => {
-            if Path::new(&a).exists() {
-                true
-            } else {
-                false
-            }
-        }
+        Valid::Path(a) => Path::new(&a).exists(),
     }
 }
 
@@ -133,7 +127,7 @@ fn force_create_dir_check_with_file(b: String) -> String {
 
 fn force_create_dir(b: String) -> String {
     if !Path::new(&b).exists() {
-        std::fs::create_dir_all(b.to_owned()).expect(":: force_create_dir(b) failed");
+        std::fs::create_dir_all(&b).expect(":: force_create_dir(b) failed");
     }
     b
 }
@@ -147,7 +141,7 @@ fn set_config_path(p: String) -> Result<String, String> {
             Ok(full_home_dir.display().to_string())
         } else {
             let path = force_create_dir(full_home_dir.display().to_string());
-            Ok(path.into())
+            Ok(path)
         }
     } else if p.starts_with("$HOME") {
         let home_dir = env::var("HOME").expect(":: VAR $HOME doesnt exists");
@@ -157,17 +151,17 @@ fn set_config_path(p: String) -> Result<String, String> {
             Ok(full_home_dir.display().to_string())
         } else {
             let path = force_create_dir(full_home_dir.display().to_string());
-            Ok(path.into())
+            Ok(path)
         }
     } else if p.is_empty() {
         let home_dir = env::var("HOME").expect(":: VAR $HOME doesnt exists");
         let mut default_path = PathBuf::from(home_dir);
         default_path.push(".config/paperbackup");
         let path = force_create_dir(default_path.display().to_string());
-        Ok(path.into())
+        Ok(path)
     } else {
         let path = force_create_dir(p);
-        Ok(path.into())
+        Ok(path)
     }
 }
 
@@ -180,7 +174,7 @@ pub fn set_qrcode_path(p: String) -> Result<String, String> {
             Ok(full_home_dir.display().to_string())
         } else {
             let path = force_create_dir(full_home_dir.display().to_string());
-            Ok(path.into())
+            Ok(path)
         }
     } else if p.starts_with("$HOME") {
         let home_dir = env::var("HOME").expect(":: VAR $HOME doesnt exists");
@@ -190,17 +184,17 @@ pub fn set_qrcode_path(p: String) -> Result<String, String> {
             Ok(full_home_dir.display().to_string())
         } else {
             let path = force_create_dir(full_home_dir.display().to_string());
-            Ok(path.into())
+            Ok(path)
         }
     } else if p.is_empty() {
         let home_dir = env::var("HOME").expect(":: VAR $HOME doesnt exists");
         let mut default_path = PathBuf::from(home_dir);
         default_path.push(".local/share/paperbackup/qrcode");
         let path = force_create_dir(default_path.display().to_string());
-        Ok(path.into())
+        Ok(path)
     } else {
         let path = force_create_dir(p);
-        Ok(path.into())
+        Ok(path)
     }
 }
 

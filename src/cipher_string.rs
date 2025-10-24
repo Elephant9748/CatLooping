@@ -182,8 +182,8 @@ pub fn to_sha256(file: &str) -> Vec<String> {
 
     println!("{}{}", "> Hash sha256 : ".bright_yellow(), hash_value);
     for line in hash_vec {
-        if line == "" {
-            println!("");
+        if line.is_empty() {
+            println!("{}", "No Pgp Data".red());
         }
 
         if line == "-----END PGP MESSAGE-----" {

@@ -38,7 +38,7 @@ impl<'a> Encoder<'a> {
         let mut out = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
         for (x, y, pixel) in self.img.enumerate_pixels() {
-            let mut tmp_pixel = pixel.clone();
+            let mut tmp_pixel = *pixel;
 
             let input_index = x + (y * width);
 
@@ -46,10 +46,10 @@ impl<'a> Encoder<'a> {
                 tmp_pixel.0[3] = self.input[input_index as usize];
             }
 
-            out.put_pixel(x, y, tmp_pixel.clone());
+            out.put_pixel(x, y, tmp_pixel);
         }
 
-        return out;
+        out
     }
 
     /// Encodes the buffer into its own image using RGBA channels
@@ -59,7 +59,7 @@ impl<'a> Encoder<'a> {
         let padding = 4 - (self.input.len() % 4);
         //if the length falls on a pixel boundary so no padding needed
         if padding != 4 {
-            pixels = pixels + padding;
+            pixels += padding;
         }
 
         //make it as close to a square as possible
@@ -71,7 +71,7 @@ impl<'a> Encoder<'a> {
         let mut out_pixels: Vec<(u32, u32, Rgba<u8>)> = Vec::new();
         for (x, y, pixel) in out.enumerate_pixels() {
             let tmp_pixel: &Rgba<u8> = pixel;
-            let mut out_pixel = tmp_pixel.clone();
+            let mut out_pixel = tmp_pixel.to_owned();
             let input_index = (x + (y * width)) * 4;
             if input_index < self.input.len() as u32 {
                 let r: u8 = self.input[input_index as usize];

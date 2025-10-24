@@ -66,8 +66,7 @@ pub fn entrophy_calc(pass: &str) -> f64 {
     let punct_range = check_punctuation(pass);
     let ascii_range = check_ascii(pass);
 
-    let num_r =
-        (lowercase_range + uppercase_range + numeric_range + punct_range + ascii_range) as f64;
+    let num_r = lowercase_range + uppercase_range + numeric_range + punct_range + ascii_range;
 
     if num_char == 0.0 {
         return 0.0;

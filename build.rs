@@ -6,7 +6,7 @@ use std::{
 
 fn main() {
     let git_hash = Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .stdout(Stdio::piped())
         .output()
         .expect("Get git short hash failed");

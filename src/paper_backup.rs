@@ -122,7 +122,7 @@ impl<'dice> Diceware for Dice<'dice> {
         }
 
         let diceware = Command::new(*run_bin)
-            .args(&[
+            .args([
                 "-d",
                 self.delimiter.unwrap(),
                 "-e",
@@ -133,14 +133,13 @@ impl<'dice> Diceware for Dice<'dice> {
             ])
             .stdout(Stdio::piped())
             .output()
-            .expect(
-                format!(
+            .unwrap_or_else(|_| {
+                panic!(
                     "{}{}",
                     "> Failed to run diceware : ".bright_red(),
                     "!Need to run on parent dir ( $HOME/[This Repo] ) ".bright_red()
                 )
-                .as_str(),
-            );
+            });
 
         let dice = String::from_utf8_lossy(&diceware.stdout);
 
@@ -150,7 +149,7 @@ impl<'dice> Diceware for Dice<'dice> {
 
         dice_vec
             .into_iter()
-            .filter(|v| v.to_string() != "")
+            .filter(|v| !v.is_empty())
             .map(|x| x.to_string())
             .collect()
     }
@@ -183,7 +182,7 @@ impl Effdefault for Eff {
         while words.len() < self.n_value.unwrap() {
             let word = eff_wordlist::large::random_word();
             words.push(word.to_string());
-            words_string.push_str(&word.to_string());
+            words_string.push_str(word);
             words_string.push('-');
         }
 
@@ -216,7 +215,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
     fn generate_mnemonic_word(&self) -> Option<String> {
         let mut phrase_result = String::new();
         match self.language? {
-            lg if lg == "English" => {
+            "English" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::English,
@@ -224,7 +223,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "French" => {
+            "French" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::French,
@@ -232,7 +231,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "Italian" => {
+            "Italian" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::Italian,
@@ -240,7 +239,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "Japanese" => {
+            "Japanese" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::Japanese,
@@ -248,7 +247,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "Korean" => {
+            "Korean" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::Korean,
@@ -256,7 +255,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "Spanish" => {
+            "Spanish" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::Spanish,
@@ -264,7 +263,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "ChineseSimplified" => {
+            "ChineseSimplified" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::ChineseSimplified,
@@ -272,7 +271,7 @@ impl<'mn> Bip39 for Mnemonics<'mn> {
                 let phrase: &str = mnemonic.phrase();
                 phrase_result.push_str(phrase);
             }
-            lg if lg == "ChineseTraditional" => {
+            "ChineseTraditional" => {
                 let mnemonic = Mnemonic::new(
                     MnemonicType::for_word_count(self.count_words?).unwrap(),
                     Language::ChineseTraditional,
@@ -696,17 +695,16 @@ pub fn menu_option(menu_list: Menu) {
 
             clear_screen!();
             let ls_image = Command::new("ls")
-                .args(&["-a", format!("{}/", path_image_check).as_str()])
+                .args(["-a", format!("{}/", path_image_check).as_str()])
                 .stdout(Stdio::piped())
                 .output()
-                .expect(
-                    format!(
+                .unwrap_or_else(|_| {
+                    panic!(
                         "{}",
                         "> something wrong with ls command. (qrcode directory not found)"
                             .bright_red()
                     )
-                    .as_str(),
-                );
+                });
 
             let ls_image_utf8 = String::from_utf8_lossy(&ls_image.stdout);
 
@@ -721,7 +719,7 @@ pub fn menu_option(menu_list: Menu) {
             let output: Vec<&str> = ls_image_vec
                 .clone()
                 .into_iter()
-                .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
+                .filter(|&x| *x != *".." && x != "." && !x.is_empty())
                 .collect::<Vec<&str>>();
 
             println!();
@@ -750,7 +748,7 @@ pub fn menu_option(menu_list: Menu) {
             if pick_image_numeric {
                 let index = pick_image.trim().parse::<usize>().unwrap();
                 path_image.push_str(path_image_check.as_str());
-                path_image.push_str("/");
+                path_image.push('/');
                 path_image.push_str(output[index.to_owned()]);
             } else {
                 println!("{}", "> Please pick by number".bright_red());
@@ -804,31 +802,35 @@ pub fn menu_option(menu_list: Menu) {
             }
 
             clear_screen!();
-            let ls = Command::new("ls")
-                .args(&["-a", format!("{}/", path_image_check).as_str()])
+            let mut ls = Command::new("ls")
+                .args(["-a", format!("{}/", path_image_check).as_str()])
                 .stdout(Stdio::piped())
                 .spawn()
-                .expect(
-                    format!(
+                .unwrap_or_else(|_| {
+                    panic!(
                         "{}",
                         "> something wrong with ls command. (qrcode directory not found)"
                             .bright_red()
                     )
-                    .as_str(),
-                );
+                });
+            ls.wait().expect("--> Failed to wait ls Decode Image");
+
             let ls_image = Command::new("grep")
-                .args(&["E_*"])
+                .args(["E_*"])
                 .stdin(Stdio::from(ls.stdout.unwrap()))
                 .stdout(Stdio::piped())
-                .output()
-                .expect(
-                    format!(
+                .spawn()
+                .unwrap_or_else(|_| {
+                    panic!(
                         "{}",
                         "> something wrong with grep command. (qrcode directory not found)"
                             .bright_red()
                     )
-                    .as_str(),
-                );
+                });
+
+            let ls_image = ls_image
+                .wait_with_output()
+                .expect("Failed to wait ls_image");
 
             let ls_image_utf8 = String::from_utf8_lossy(&ls_image.stdout);
 
@@ -846,7 +848,7 @@ pub fn menu_option(menu_list: Menu) {
             let output: Vec<&str> = ls_image_vec
                 .clone()
                 .into_iter()
-                .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
+                .filter(|&x| *x != *".." && x != "." && *x != *"")
                 .collect::<Vec<&str>>();
 
             println!();
@@ -876,11 +878,11 @@ pub fn menu_option(menu_list: Menu) {
                 let index = pick_image.trim().parse::<usize>().unwrap();
                 if path_image_check.is_empty() {
                     path_image.push_str("qrcode");
-                    path_image.push_str("/");
+                    path_image.push('/');
                     path_image.push_str(output[index.to_owned()]);
                 } else {
                     path_image.push_str(path_image_check.as_str());
-                    path_image.push_str("/");
+                    path_image.push('/');
                     path_image.push_str(output[index.to_owned()]);
                 }
             } else {
@@ -915,7 +917,7 @@ fn storeleaf(store_val: String) {
     let path = Path::new("frost");
     let show_path = path.display();
 
-    let mut file = match File::create(&path) {
+    let mut file = match File::create(path) {
         Err(why) => panic!("> couldn't create path {}: {}", show_path, why),
         Ok(file) => file,
     };
@@ -929,7 +931,7 @@ fn storeleaf(store_val: String) {
 pub fn catch_stdin() -> String {
     let mut input = String::new();
 
-    let _ = io::stdout().flush().unwrap();
+    io::stdout().flush().unwrap();
 
     io::stdin()
         .read_line(&mut input)
@@ -940,7 +942,7 @@ pub fn catch_stdin() -> String {
 
 pub fn gpg_encrypt(qrcodepath: String) -> Result<String, String> {
     let gpg = Command::new("gpg")
-        .args(&[
+        .args([
             "-o",
             // "secret.gpg",
             format!("{}/secret.gpg", qrcodepath).as_str(),
@@ -965,7 +967,7 @@ pub fn gpg_encrypt(qrcodepath: String) -> Result<String, String> {
     let gpg_utf8_err = String::from_utf8_lossy(&gpg.stderr);
 
     if gpg_utf8.is_empty() {
-        Ok(format!("> gpg_encrypt successfully."))
+        Ok("> gpg_encrypt successfully.".to_string())
     } else {
         Err(format!(
             "> something wrong with gpg_utf8_err! : {}",
@@ -987,7 +989,7 @@ pub fn store_tofile(store_val: String, temp_path: String) {
     let path = Path::new(&complete_path);
     let show_path = path.display();
 
-    let mut file = match File::create(&path) {
+    let mut file = match File::create(path) {
         Err(why) => panic!("> couldn't create path {}: {}", show_path, why),
         Ok(file) => file,
     };
@@ -1010,7 +1012,7 @@ pub fn validate_passphrase(val: String) -> String {
         let check = catch_stdin();
         clear_screen!();
 
-        if check == "" {
+        if check.is_empty() {
             let val_copy = val.clone();
             validate_passphrase(val_copy);
             break;
@@ -1070,14 +1072,12 @@ pub fn shred_helper_files(val: Vec<&str>) -> Result<String, String> {
     if shred_utf8.is_empty() {
         Ok(format!("{}", "> shred successfully. ".green()))
     } else {
-        Err(format!("> something wrong with shreding files"))
+        Err("> something wrong with shreding files".to_string())
     }
 }
 
 pub fn reset_gpg_agent() -> Result<String, String> {
-    let mut option: Vec<&str> = Vec::new();
-    option.push("--kill");
-    option.push("all");
+    let option: Vec<&str> = vec!["--kill", "all"];
 
     let run = Command::new("gpg")
         .args(&option)
@@ -1131,13 +1131,12 @@ pub fn qrcode_generate_to_file(val: &str, val2: &str, val3: &str, temp_path: Str
     qrcode.zoom(10);
 
     let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
-    std::fs::write(name_png_print, buffer).expect(
-        format!(
+    std::fs::write(name_png_print, buffer).unwrap_or_else(|_| {
+        panic!(
             "{}",
             ">Something wrong with qrcode_generate write file".red()
         )
-        .as_str(),
-    );
+    });
 
     print_qr(val).unwrap();
     println!(
@@ -1175,13 +1174,12 @@ pub fn qrcode_generate_to_file2(file: &str, val2: &str) {
     qrcode.zoom(10);
 
     let buffer = qrcode.generate(ColorQr::Grayscale(0, 255)).unwrap();
-    std::fs::write(name_png_print, buffer).expect(
-        format!(
+    std::fs::write(name_png_print, buffer).unwrap_or_else(|_| {
+        panic!(
             "{}",
             ">Something wrong with qrcode_generate write file".red()
         )
-        .as_str(),
-    );
+    });
 
     print_qr(&content_file).unwrap();
     println!(
@@ -1217,10 +1215,8 @@ fn qrcode_with_short_hash(
         ));
     }
 
-    println!("--> {}", qrcodepath);
-
     let qrcode_short = Command::new(*run_bin)
-        .args(&[
+        .args([
             format!("{}{}_{}_{}.png", qrcodepath, hash, utc_time, name_png).as_str(),
             "-gravity",
             "center",
@@ -1262,7 +1258,7 @@ fn qrcode_with_short_hash(
 
 fn qrcode_with_short2(utc_time: &str, name_png: &str) -> Result<String, String> {
     let qrcode_short = Command::new("convert")
-        .args(&[
+        .args([
             format!("qrcode/qrfile_{}_{}.png", &utc_time, &name_png).as_str(),
             "-gravity",
             "center",
@@ -1305,11 +1301,9 @@ fn qrcode_with_short2(utc_time: &str, name_png: &str) -> Result<String, String> 
 pub fn get_secret_gpg(string_path: &str) -> String {
     let mut bucket_val = String::new();
     if let Ok(lines) = read_a_file(string_path) {
-        for line in lines {
-            if let Ok(val) = line {
-                bucket_val.push_str(val.as_str());
-                bucket_val.push_str("\n");
-            }
+        for line in lines.map_while(Result::ok) {
+            bucket_val.push_str(line.as_str());
+            bucket_val.push('\n');
         }
     }
     bucket_val
@@ -1340,23 +1334,22 @@ fn unlock_qrcode() {
         .expect("--> Failed check home dir unlock_qrcode()");
     let mut path_stdin_val_mut = String::new();
     if path_stdin_val.is_empty() {
-        path_stdin_val_mut.push_str(format!("{}", readtoml.qrcode.path).as_str());
+        path_stdin_val_mut.push_str(readtoml.qrcode.path.as_str());
     } else {
         path_stdin_val_mut.push_str(homedir.as_str());
     }
 
     clear_screen!();
     let list_of_qrcode = Command::new("ls")
-        .args(&["-a", format!("{}", path_stdin_val_mut).as_str()])
+        .args(["-a", path_stdin_val_mut.as_str()])
         .stdout(Stdio::piped())
         .output()
-        .expect(
-            format!(
+        .unwrap_or_else(|_| {
+            panic!(
                 "{}",
                 "> somthing wrong with list_of_qrcode. (qrcode directory not found)".bright_red()
             )
-            .as_str(),
-        );
+        });
 
     let list_of_qrcode_utf8 = String::from_utf8_lossy(&list_of_qrcode.stdout);
 
@@ -1371,7 +1364,7 @@ fn unlock_qrcode() {
     let output: Vec<&str> = list_of_qrcode_vec
         .clone()
         .into_iter()
-        .filter(|&x| x != "..".to_string() && x != ".".to_string() && x != "".to_string())
+        .filter(|&x| *x != *".." && *x != *"." && *x != *"")
         .collect::<Vec<&str>>();
 
     println!();
@@ -1408,14 +1401,12 @@ fn unlock_qrcode() {
     if out_chose {
         let index_path_name = chose.trim().parse::<usize>().unwrap();
         path_name.push_str(output[index_path_name]);
+    } else if chose.contains("[") && chose.contains("]") && chose.contains(",") {
+        chose_copy.remove(chose_copy.len() - 1);
+        chose_copy.remove(0);
+        chose_split = chose_copy.split(",").collect();
     } else {
-        if chose.contains("[") && chose.contains("]") && chose.contains(",") {
-            chose_copy.remove(chose_copy.len() - 1);
-            chose_copy.remove(0);
-            chose_split = chose_copy.split(",").collect();
-        } else {
-            path_name.push_str(format!("{}", chose).as_str());
-        }
+        path_name.push_str(chose.as_str());
     }
 
     if chose_split.is_empty() {
@@ -1490,16 +1481,15 @@ pub fn stdin_check_numeric(val: &str) -> bool {
     let chars_copy = chars.clone();
     let mut numeric = 0;
     for char in chars {
-        if char.is_digit(10) {
+        if char.is_ascii_digit() {
             numeric += 1;
         }
     }
 
     if numeric == chars_copy.len() {
-        true
-    } else {
-        false
+        return true;
     }
+    false
 }
 
 fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
@@ -1512,7 +1502,7 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
 
     let qrcode_name_location = format!("{}/{}", path_of_file_mut, name_of_file);
     let zbar = Command::new("zbarimg")
-        .args(&[
+        .args([
             "--nodisplay",
             "--nodbus",
             "--quiet",
@@ -1520,7 +1510,7 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
         ])
         .stdout(Stdio::piped())
         .output()
-        .expect(format!("{}", "somthing wrong with zbar piped()".bright_red()).as_str());
+        .unwrap_or_else(|_| panic!("{}", "somthing wrong with zbar piped()".bright_red()));
 
     let zbar_utf8 = String::from_utf8_lossy(&zbar.stdout);
     let zbar_utf8_replace = zbar_utf8.replace("QR-Code:", "");
@@ -1536,7 +1526,7 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
 
     for line in zbar_utf8_vec.into_iter() {
         writeln!(&mut file, "{}", line)
-            .expect(format!("{}", "> something wrong with writeln!".bright_red()).as_str());
+            .unwrap_or_else(|_| panic!("{}", "> something wrong with writeln!".bright_red()));
     }
 
     let gpgterm = get_secret_gpg(format!("{}/qrcode_encode.gpg", path_of_file_mut).as_str());
@@ -1545,7 +1535,7 @@ fn scan_qrcode(name_of_file: &str, path_of_file: &str) {
 
 pub fn gpg_decrypt(qrcodepath: String) -> Result<String, String> {
     let gpg = Command::new("gpg")
-        .args(&[
+        .args([
             "--decrypt",
             format!("{}/qrcode_encode.gpg", qrcodepath).as_str(),
         ])
@@ -1572,39 +1562,132 @@ pub fn gpg_decrypt(qrcodepath: String) -> Result<String, String> {
 }
 
 pub fn get_version() {
+    let name = env!("CARGO_PKG_NAME");
     let version = env!("CARGO_PKG_VERSION");
     let build_date = env!("DATE");
     let git_head_hash = env!("GIT_HASH");
-    println!("paperpass {} ({} {})", version, git_head_hash, build_date);
+    println!("{} {} ({} {})", name, version, git_head_hash, build_date);
 }
 
 pub fn get_help() {
     // println!("\nrequire: ");
     // println!("       - rust-diceware binary from crate.io manually installed");
     // println!("");
-    println!("Usage: paper_backup [options]");
-    println!("");
-    println!("Options: ");
-    println!("       --set-config     :  Set config & qrcode path");
-    println!("       --config         :  Show Config");
-    println!("       --eff            :  Generate Eff random wordlist");
-    println!("       --eff-lock       :  Generate paper backup with Eff random wordlist");
-    println!("       --diceware       :  Generate passphrase using diceware crate");
-    println!("       --diceware-lock  :  Generate qrcoode paper backup with --diceware");
-    println!("       --mnemonic       :  Generate passphrase using tiny-bip39 crate");
-    println!("       --mnemonic-lock  :  Generate qrcode paper backup using tiny-bip39 crate");
-    println!("       --unlock         :  Unlock qrcode from directory qrcode/");
-    println!("       --lock-string    :  Generate qrcode paper backup from string input");
-    println!("       --qrcode-no-pgp  :  Generate qrcode only no pgp");
-    println!("       --from-file-pgp  :  Generate qrcode with pgp from file");
-    println!("       --from-file      :  Generate qrcode only no pgp from file");
-    println!("       --convert        :  Convertion string to ?");
-    println!("       --entropy-check  :  Check entropy value of password / string");
-    println!("       --password       :  Password generator not include Extended ASCII");
-    println!("       --encode-image   :  Encode message to image");
-    println!("       --decode-image   :  Decode message to image");
-    println!("       --version        :  version");
-    println!("       --help           :  Help command!\n");
+    println!(
+        "{}{}",
+        "Usage:".bright_green(),
+        "\tpaperbackup [OPTIONS]".bright_blue()
+    );
+    println!("{}", "Options: ".bright_green());
+    println!(
+        "{}{}",
+        "\t--set-config".bright_blue(),
+        "\t\tSet config & qrcode path".white()
+    );
+    println!(
+        "{}{}",
+        "\t--config".bright_blue(),
+        "\t\tShow Config".white()
+    );
+    println!(
+        "{}{}",
+        "\t--eff".bright_blue(),
+        "\t\t\tGenerate Eff random wordlist".white()
+    );
+    println!(
+        "{}{}",
+        "\t--eff-lock".bright_blue(),
+        "\t\tGenerate paper backup with Eff random wordlist".white()
+    );
+    println!(
+        "{}{}",
+        "\t--diceware".bright_blue(),
+        "\t\tGenerate passphrase using diceware crate".white()
+    );
+    println!(
+        "{}{}",
+        "\t--diceware-lock".bright_blue(),
+        "\t\tGenerate qrcoode paper backup with --diceware".white()
+    );
+    println!(
+        "{}{}",
+        "\t--mnemonic".bright_blue(),
+        "\t\tGenerate passphrase using tiny-bip39 crate".white()
+    );
+    println!(
+        "{}{}",
+        "\t--mnemonic-lock".bright_blue(),
+        "\t\tGenerate qrcode paper backup using tiny-bip39 crate".white()
+    );
+    println!(
+        "{}{}",
+        "\t--unlock".bright_blue(),
+        "\t\tUnlock qrcode from directory qrcode/".white()
+    );
+    println!(
+        "{}{}",
+        "\t--lock-string".bright_blue(),
+        "\t\tGenerate qrcode paper backup from string input".white()
+    );
+    println!(
+        "{}{}",
+        "\t--qrcode-no-pgp".bright_blue(),
+        "\t\tGenerate qrcode only no pgp".white()
+    );
+    println!(
+        "{}{}",
+        "\t--from-file-pgp".bright_blue(),
+        "\t\tGenerate qrcode with pgp from file".white()
+    );
+    println!(
+        "{}{}",
+        "\t--from-file".bright_blue(),
+        "\t\tGenerate qrcode only no pgp from file".white()
+    );
+    println!(
+        "{}{}",
+        "\t--convert".bright_blue(),
+        "\t\tConvertion string to ?".white()
+    );
+    println!(
+        "{}{}",
+        "\t--entropy-check".bright_blue(),
+        "\t\tCheck entropy value of password / string".white()
+    );
+    println!(
+        "{}{}",
+        "\t--password".bright_blue(),
+        "\t\tPassword generator not include Extended ASCII".white()
+    );
+    println!(
+        "{}{}",
+        "\t--encode-image ".bright_blue(),
+        "\t\tEncode message to image".white()
+    );
+    println!(
+        "{}{}",
+        "\t--decode-image ".bright_blue(),
+        "\t\tDecode message to image".white()
+    );
+    println!("{}{}", "\t--version".bright_blue(), "\t\tversion".white());
+    println!(
+        "{}{}",
+        "\t--help".bright_blue(),
+        "\t\t\tHelp command!\n".white()
+    );
+
+    let name = env!("CARGO_PKG_NAME");
+    let version = env!("CARGO_PKG_VERSION");
+    let build_date = env!("DATE");
+    let git_head_hash = env!("GIT_HASH");
+    println!(
+        "{}{}{}{}{}",
+        "Version: ".bright_green(),
+        name,
+        version,
+        build_date,
+        git_head_hash
+    );
 }
 
 pub fn mnemonic_menu_list() -> Vec<String> {
@@ -1752,7 +1835,7 @@ mod tests {
     #[test]
     fn test_from_rot13() {
         let txt = "grkg_sebz_ebg13";
-        assert_eq!(from_rot13(&txt), "text_from_rot13");
+        assert_eq!(from_rot13(txt), "text_from_rot13");
     }
     #[test]
     fn test_to_rot13() {
@@ -1781,6 +1864,6 @@ mod tests {
         let init_eff = Eff::new(1);
         let eff = init_eff.generate_eff();
         let n = stdin_check_numeric(eff.unwrap().as_str());
-        assert_eq!(n, false);
+        assert!(!n);
     }
 }

@@ -9,33 +9,37 @@ use colored::Colorize;
 pub fn copy_clipboard(text: &str) {
     if env::var("XDG_SESSION_TYPE").unwrap() == "wayland" {
         let wl_copy_check = Command::new("sh")
-            .args(&["-c", format!("command -v wl-copy").as_str()])
+            .args(["-c", "command -v wl-copy"])
             .stdout(Stdio::piped())
             .output()
-            .expect(
-                format!(
+            .unwrap_or_else(|_| {
+                panic!(
                     "{}{}",
                     ">".bright_yellow(),
                     " doesnt have wl-clipboard".bright_red()
                 )
-                .as_str(),
-            );
+            });
         if wl_copy_check.stdout.is_empty() {
-            println!("{}{}", ">".bright_yellow(), " doesnt have wl-clipboard")
+            println!(
+                "{}{}",
+                ">".bright_yellow(),
+                " doesnt have wl-clipboard".yellow()
+            )
         } else {
             Command::new("wl-copy")
-                .args(&[text])
+                .args([text])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
-                .expect(
-                    format!(
+                .unwrap_or_else(|_| {
+                    panic!(
                         "{}{}",
                         ">".bright_yellow(),
                         " wl-copy copy failed.".bright_red()
                     )
-                    .as_str(),
-                );
+                })
+                .wait()
+                .expect("Failed to wait wl-copy Command on copy_clipboard()");
         }
     } else {
         println!(
@@ -51,13 +55,15 @@ pub fn clear_clipboard() {
     let clear_clipboard_duration = 30; //default 30s until clipboard clear
     let thread_clear_clipboard = thread::spawn(move || {
         Command::new("sh")
-            .args(&[
+            .args([
                 "-c",
                 format!("sleep {} && wl-copy -c", clear_clipboard_duration).as_str(),
             ])
             .stdout(Stdio::piped())
             .spawn()
-            .expect("Thread failed No bash found.");
+            .expect("--> Failed to run sh sleep clear_clipboar()")
+            .wait()
+            .expect("--> Failed to wait sh Thread spwan clear_clipboar()")
     });
 
     if thread_clear_clipboard.join().is_ok() {

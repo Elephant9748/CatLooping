@@ -20,7 +20,7 @@ fn main() {
     let mut check_option_double = false;
     match main_args.len() {
         1 => {
-            for m in main_args.to_owned() {
+            for m in main_args.iter().to_owned() {
                 match m {
                     arg if arg == "--help" || arg == "-h" => menu_option(Menu::Help),
                     arg if arg == "--version" || arg == "-v" => menu_option(Menu::Version),
