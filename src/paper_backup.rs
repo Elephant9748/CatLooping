@@ -354,7 +354,12 @@ pub fn menu_option(menu_list: Menu) {
                 println!(
                     "{}",
                     gpg_encrypt(readtoml.qrcode.path.to_owned())
+                        .unwrap_or_else(|_| shred_helper_files(
+                            [format!("{}/frost", readtoml.qrcode.path).as_str()].to_vec()
+                        )
                         .unwrap()
+                        .bright_green()
+                        .to_string())
                         .bright_green()
                 );
 
@@ -416,7 +421,12 @@ pub fn menu_option(menu_list: Menu) {
                     println!(
                         "{}",
                         gpg_encrypt(readtoml.qrcode.path.to_owned())
+                            .unwrap_or_else(|_| shred_helper_files(
+                                [format!("{}/frost", readtoml.qrcode.path).as_str()].to_vec()
+                            )
                             .unwrap()
+                            .bright_green()
+                            .to_string())
                             .bright_green()
                     );
 
@@ -496,7 +506,12 @@ pub fn menu_option(menu_list: Menu) {
                     println!(
                         "{}",
                         gpg_encrypt(readtoml.qrcode.path.to_owned())
+                            .unwrap_or_else(|_| shred_helper_files(
+                                [format!("{}/frost", readtoml.qrcode.path).as_str()].to_vec()
+                            )
                             .unwrap()
+                            .bright_green()
+                            .to_string())
                             .bright_green()
                     );
 
@@ -542,7 +557,12 @@ pub fn menu_option(menu_list: Menu) {
                     println!(
                         "{}",
                         gpg_encrypt(readtoml.qrcode.path.to_owned())
+                            .unwrap_or_else(|_| shred_helper_files(
+                                [format!("{}/frost", readtoml.qrcode.path).as_str()].to_vec()
+                            )
                             .unwrap()
+                            .bright_green()
+                            .to_string())
                             .bright_green()
                     );
 
@@ -593,7 +613,12 @@ pub fn menu_option(menu_list: Menu) {
                     println!(
                         "{}",
                         gpg_encrypt(readtoml.qrcode.path.to_owned())
+                            .unwrap_or_else(|_| shred_helper_files(
+                                [format!("{}/frost", readtoml.qrcode.path).as_str()].to_vec()
+                            )
                             .unwrap()
+                            .bright_green()
+                            .to_string())
                             .bright_green()
                     );
 
@@ -1434,7 +1459,12 @@ fn unlock_qrcode() {
                 "{}{}",
                 "> passphrase: \n".bright_green(),
                 gpg_decrypt(path_stdin_val_mut.to_owned())
+                    .unwrap_or_else(|_| shred_helper_files(
+                        [format!("{}/qrcode_encode.gpg", path_stdin_val_mut).as_str()].to_vec()
+                    )
                     .unwrap()
+                    .bright_green()
+                    .to_string())
                     .bright_yellow()
             );
         } else {
