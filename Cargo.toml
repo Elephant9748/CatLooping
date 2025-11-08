@@ -16,7 +16,7 @@ colored = "3.0.0"
 eff-wordlist = "1.0.3"
 hex = "0.4.3"
 image = "0.25.8"
-openssl = { version = "0.10.74", features = ["vendored"] }
+openssl = { version = "0.10.75", features = ["vendored"] }
 passwords = "3.1.16"
 progress_bar = "1.4.0"
 qr2term = "0.3.3"
