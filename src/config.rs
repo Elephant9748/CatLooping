@@ -8,7 +8,7 @@ use std::{
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
-use crate::{env_paper::ENV_CONFIG, paper_backup::catch_stdin};
+use crate::{banner::prompt_banner, env_paper::ENV_CONFIG, paper_backup::catch_stdin};
 
 #[allow(dead_code)]
 enum Valid {
@@ -34,6 +34,7 @@ pub struct Qrcode {
 }
 
 pub fn set_config() {
+    prompt_banner();
     let config_default_path = "$HOME/.config/paperbackup";
 
     let homedir =

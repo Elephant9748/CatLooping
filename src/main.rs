@@ -2,6 +2,7 @@ use colored::Colorize;
 // use paper_backup::lib::*;
 use std::env;
 
+mod banner;
 mod cipher_string;
 mod clipboard;
 mod config;
@@ -11,7 +12,7 @@ mod paper_backup;
 mod pass_gen;
 mod steg;
 
-use paper_backup::{catch_stdin, menu_option, mnemonic_menu_list, Menu};
+use paper_backup::{Menu, catch_stdin, menu_option, mnemonic_menu_list};
 
 fn main() {
     let mut main_args: Vec<String> = env::args().collect();

@@ -15,6 +15,7 @@ use std::{
 };
 
 use crate::{
+    banner::prompt_banner,
     cipher_string::*,
     clipboard::copy_clipboard,
     config::{read_config_file, set_config, set_qrcode_path, show_config},
@@ -1618,6 +1619,7 @@ pub fn get_help() {
     // println!("\nrequire: ");
     // println!("       - rust-diceware binary from crate.io manually installed");
     // println!("");
+    prompt_banner();
     println!(
         "\n{}{}",
         "Usage:".bright_green(),
