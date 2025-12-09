@@ -8,7 +8,7 @@ use colored::Colorize;
 
 pub fn copy_clipboard(text: &str) {
     if env::var("XDG_SESSION_TYPE").unwrap() == "wayland" {
-        let mut wl_copy_check = Command::new("sh")
+        let wl_copy_check = Command::new("sh")
             .args(["-c", "command -v wl-copy"])
             .stdout(Stdio::piped())
             .output()
