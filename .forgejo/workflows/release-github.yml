@@ -39,7 +39,11 @@ jobs:
       - name: Forgejo Cli
         shell: bash
         run: |
-          cargo install forgejo-cli
+          wget https://codeberg.org/forgejo-contrib/forgejo-cli/releases/download/v0.3.0/forgejo-cli-linux.gz
+          gzip -dk forgejo-cli-linux.gz
+          mv forgejo-cli-linux fj
+          chmod +x fj
+          install -Dm755 fj /usr/local/bin/
           fj version
           echo "------------------------"
           echo "Forgejo install success."
