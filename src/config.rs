@@ -78,7 +78,21 @@ pub fn set_config() {
 pub fn show_config() {
     let readenv = env::var(ENV_CONFIG).expect("--> Failed to read shells env");
     let readtoml = read_config_file(&readenv).expect("--> Failed to read toml file");
-    println!("\x1b[32m{:#?}", readtoml);
+
+    println!();
+    println!("Config{}", ":".bright_yellow());
+    println!(
+        "\t{} {}",
+        "path".bright_black(),
+        readtoml.config.path.bright_yellow()
+    );
+    println!(
+        "\t{} {}",
+        "qrcode".bright_black(),
+        readtoml.qrcode.path.bright_green()
+    );
+    println!();
+    // println!("\x1b[32m{:#?}", readtoml);
 }
 
 fn init_done(config: Configs) {
