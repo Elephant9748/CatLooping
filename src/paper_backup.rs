@@ -20,7 +20,7 @@ use crate::{
     eff::{Eff, Effdefault},
     entropy_check::{entrophy_calc, zxcvbn_check},
     env_paper::ENV_CONFIG,
-    help::get_help,
+    help::{get_help, get_version},
     mnemonic::{Bip39, Mnemonics},
     pass_gen::gen_password,
     steg::{
@@ -1383,12 +1383,4 @@ pub fn gpg_decrypt(qrcodepath: String) -> Result<String, String> {
             gpg_utf8_err
         ))
     }
-}
-
-pub fn get_version() {
-    let name = env!("CARGO_PKG_NAME");
-    let version = env!("CARGO_PKG_VERSION");
-    let build_date = env!("DATE");
-    let git_head_hash = env!("GIT_HASH");
-    println!("{}-{} ({} {})", name, version, git_head_hash, build_date);
 }

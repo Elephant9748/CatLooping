@@ -1,5 +1,13 @@
-use crate::{banner::prompt_banner, paper_backup::get_version};
+use crate::banner::prompt_banner;
 use colored::Colorize;
+
+pub fn get_version() {
+    let name = env!("CARGO_PKG_NAME");
+    let version = env!("CARGO_PKG_VERSION");
+    let build_date = env!("DATE");
+    let git_head_hash = env!("GIT_HASH");
+    println!("{}-{} ({} {})", name, version, git_head_hash, build_date);
+}
 
 pub fn get_help() {
     // println!("\nrequire: ");
