@@ -26,7 +26,7 @@ jobs:
           echo 'nameserver 1.1.0.0' >>/etc/resolv.conf
 
       - name: Install dependencies
-        run: pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git github-cli
+        run: pacman --noconfirm -Syu && pacman --needed --noconfirm -S base-devel cmake ninja curl jq nodejs git github-cli wget
 
       - name: Checkout code
         uses: https://code.forgejo.org/actions/checkout@v5
