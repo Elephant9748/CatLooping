@@ -118,4 +118,5 @@ pub fn get_help() {
     );
     print!("{}", "Version: ".bright_green());
     get_version();
+    println!();
 }
