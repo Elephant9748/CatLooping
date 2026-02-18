@@ -133,3 +133,81 @@ fn main() {
         menu_option(Menu::Notenum(not_menu));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{cipher_string::*, dice::*, eff::*, paper_backup::*};
+
+    #[test]
+    fn test_to_viginere() {
+        let key = "bishon";
+        let value = "MESSAGE";
+        assert_eq!("NMKZOTF", to_vigenere(value, key));
+    }
+
+    #[test]
+    fn test_from_viginere() {
+        let key = "stick";
+        let value = "ttvcxs";
+        assert_eq!("banana", from_vigenere(value, key));
+    }
+
+    #[test]
+    fn test_to_txt_base64_rot13() {
+        let txt = "HELLO!";
+        let real = to_txt_base64_rot13(txt).unwrap();
+        assert_eq!("FRIZGR8u", real);
+    }
+
+    #[test]
+    fn test_from_rot13_base64_txt() {
+        let txt = "FRIZGR8u";
+        let real = from_rot13_base64_txt(txt).unwrap();
+        assert_eq!("HELLO!", real);
+    }
+
+    #[test]
+    fn test_to_base64() {
+        let base64_txt = "HELLO!";
+        let real = to_base64(base64_txt).unwrap();
+        assert_eq!("SEVMTE8h", real);
+    }
+
+    #[test]
+    fn test_from_base64() {
+        let base64_txt = "SEVMTE8h";
+        let real = from_base64(base64_txt).unwrap();
+        assert_eq!("HELLO!", real);
+    }
+
+    #[test]
+    fn test_from_rot13() {
+        let txt = "grkg_sebz_ebg13";
+        assert_eq!(from_rot13(txt), "text_from_rot13");
+    }
+    #[test]
+    fn test_to_rot13() {
+        let txt = "text_to_rot13";
+        assert_eq!(to_rot13(txt), "grkg_gb_ebg13");
+    }
+
+    #[test]
+    fn test_diceware_generate() {
+        let dice_init = Dice::new(1, "minilock", "-");
+        let dice: Vec<String> = dice_init.generate_wordlist();
+        let mut val = false;
+        for el in dice {
+            let n = stdin_check_numeric(el.as_str());
+            if !n { val = !n } else { val = n }
+        }
+        assert!(val);
+    }
+
+    #[test]
+    fn test_generate_eff_word() {
+        let init_eff = Eff::new(1);
+        let eff = init_eff.generate_eff();
+        let n = stdin_check_numeric(eff.unwrap().as_str());
+        assert!(!n);
+    }
+}
