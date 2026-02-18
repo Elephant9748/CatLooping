@@ -1,18 +1,22 @@
 use colored::Colorize;
-// use paper_backup::lib::*;
 use std::env;
 
 mod banner;
 mod cipher_string;
 mod clipboard;
 mod config;
+mod dice;
+mod eff;
 mod entropy_check;
 mod env_paper;
+mod help;
+mod mnemonic;
 mod paper_backup;
 mod pass_gen;
 mod steg;
 
-use paper_backup::{Menu, catch_stdin, menu_option, mnemonic_menu_list};
+use crate::mnemonic::mnemonic_menu_list;
+use paper_backup::{Menu, catch_stdin, menu_option};
 
 fn main() {
     let mut main_args: Vec<String> = env::args().collect();
