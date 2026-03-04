@@ -10,7 +10,7 @@ edition = "2024"
 
 [dependencies]
 base64-stream = "4.0.1"
-chrono = "0.4.43"
+chrono = "0.4.44"
 cipha = "0.1.0"
 colored = "3.1.1"
 eff-wordlist = "1.0.3"
@@ -28,7 +28,7 @@ toml = "0.9.12"
 zxcvbn = "3.1.0"
 
 [build-dependencies]
-chrono = "0.4.43"
+chrono = "0.4.44"
 
 # optimize size
 # cargo build --profile release-small
