@@ -12,7 +12,6 @@ arch=(x86_64 arm armv7h armv6h aarch64)
 # arch=(x86_64)
 
 makedepends=(git rust)
-# depends=(git rust)
 
 sha256sums=('SKIP')
 options=(!debug)
