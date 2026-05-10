@@ -6,7 +6,7 @@ url="https://codeberg.org/rigel254/paperbackup"
 # source=("$pkgname::git+$url#branch=main")
 # source=("$pkgname::git+$url#tag=$pkgver")
 # for source local
-source=("$pkgname::git+file://${HOME}/project/paperbackup")
+source=("$pkgname::git+file://${PWD}/../")
 
 arch=(x86_64 arm armv7h armv6h aarch64)
 # arch=(x86_64)
