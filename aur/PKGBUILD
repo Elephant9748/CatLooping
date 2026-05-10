@@ -4,9 +4,9 @@ pkgrel=1
 pkgdesc="Swaypaper Arch Package"
 url="https://codeberg.org/rigel254/paperbackup"
 # source=("$pkgname::git+$url#branch=main")
-source=("$pkgname::git+$url#tag=$pkgver")
+# source=("$pkgname::git+$url#tag=$pkgver")
 # for source local
-# source=("$pkgname::git+file://${HOME}/project/paperpass")
+source=("$pkgname::git+file://${HOME}/project/paperbackup")
 
 arch=(x86_64 arm armv7h armv6h aarch64)
 # arch=(x86_64)
@@ -19,11 +19,12 @@ options=(!debug)
 build () {
   cd "$pkgname"
 
-  if [[ $CARCH != x86_64 ]]; then
-    export CARGO_PROFILE_RELEASE_LTO=off
-  fi
+  # if [[ $CARCH != x86_64 ]]; then
+  #   export CARGO_PROFILE_RELEASE_LTO=off
+  # fi
   # cargo build --locked --profile release-small -j2
-  cargo build --offline --profile release-small -j2
+  # cargo build --offline --profile release-small -j2
+  cargo build --profile release-small -j2
 }
 
 package() {
