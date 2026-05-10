@@ -11,17 +11,22 @@ source=("$pkgname::git+file://${PWD}/../")
 arch=(x86_64 arm armv7h armv6h aarch64)
 # arch=(x86_64)
 
-makedepends=(git rust)
+makedepends=(git rust openssl)
+# depends=(openssl pkgconf lib32-openssl)
 
 sha256sums=('SKIP')
 options=(!debug)
 
 build () {
+  export OPENSSL_NO_VENDOR=1
+  export OPENSSL_LIB_DIR=/usr/lib
+  export OPENSSL_INCLUDE_DIR=/usr/include/openssl
   cd "$pkgname"
 
   # cargo build --locked --profile release-small -j2
   # cargo build --offline --profile release-small -j2
   cargo build --profile release-small -j2
+  # cargo build --release -j2
 }
 
 package() {
