@@ -1,0 +1,33 @@
+pkgname=paperbackup
+pkgver=1.2.0
+pkgrel=1
+pkgdesc="Swaypaper Arch Package"
+url="https://codeberg.org/rigel254/paperbackup"
+# source=("$pkgname::git+$url#branch=main")
+source=("$pkgname::git+$url#tag=$pkgver")
+# for source local
+# source=("$pkgname::git+file://${HOME}/project/paperpass")
+
+arch=(x86_64 arm armv7h armv6h aarch64)
+# arch=(x86_64)
+
+makedepends=(git rust)
+# depends=(git rust)
+
+sha256sums=('SKIP')
+options=(!debug)
+
+build () {
+  cd "$pkgname"
+
+  if [[ $CARCH != x86_64 ]]; then
+    export CARGO_PROFILE_RELEASE_LTO=off
+  fi
+  # cargo build --locked --profile release-small -j2
+  cargo build --offline --profile release-small -j2
+}
+
+package() {
+  cd "$pkgname"
+  install -vDm755 -t "$pkgdir/usr/local/bin/" target/release-small/paperbackup
+}
