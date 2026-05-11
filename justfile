@@ -12,4 +12,18 @@ b:
 # clean build
 clean:
         cargo clean
+#Aur build pkg
+aur-build:
+        #!/usr/bin/env bash
+        cd aur 
+        makepkg -cf
+#Aur clean after build pkg
+aur-clean:
+        #!/usr/bin/env bash
+        rm -rf aur/paperbackup aur/*.zst aur/pkg aur/src
+#Aur install pkg into system
+aur-install:
+        #!/usr/bin/env bash
+        cd aur 
+        makepkg -si
 
