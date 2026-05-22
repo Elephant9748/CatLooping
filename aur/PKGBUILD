@@ -25,7 +25,7 @@ build () {
 
   # cargo build --locked --profile release-small -j2
   # cargo build --offline --profile release-small -j2
-  cargo build --profile release-small -j2
+  cargo build --profile release-small -j`nproc 2>/dev/null || getconf _NPROCESSORS_CONF`
   # cargo build --release -j2
 }
 
