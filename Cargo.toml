@@ -9,7 +9,7 @@ edition = "2024"
 # path = "src/lib/paper_backup_lib.rs"
 
 [dependencies]
-base64-stream = "5.0.2"
+base64-stream = "6.0.0"
 chrono = "0.4.45"
 cipha = "0.1.0"
 colored = "3.1.1"
