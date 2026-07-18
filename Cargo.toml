@@ -9,26 +9,26 @@ edition = "2024"
 # path = "src/lib/paper_backup_lib.rs"
 
 [dependencies]
-base64-stream = "5.0.0"
-chrono = "0.4.44"
+base64-stream = "5.0.2"
+chrono = "0.4.45"
 cipha = "0.1.0"
 colored = "3.1.1"
 eff-wordlist = "1.0.3"
 hex = "0.4.3"
 image = "0.25.10"
-openssl = { version = "0.10.80", features = ["vendored"] }
-passwords = "3.1.16"
+openssl = { version = "0.10.81", features = ["vendored"] }
+passwords = "3.1.18"
 progress_bar = "1.4.0"
 qr2term = "0.3.3"
 qrcode-png = "0.4.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 tiny-bip39 = "2.0.0"
-toml = "1.1.2"
+toml = "1.1.3"
 zxcvbn = "3.1.1"
 
 [build-dependencies]
-chrono = "0.4.44"
+chrono = "0.4.45"
 
 # optimize size
 # cargo build --profile release-small

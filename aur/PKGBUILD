@@ -1,6 +1,6 @@
 pkgname=paperbackup
 pkgver=1.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Paperbackup Arch Package"
 url="https://codeberg.org/rigel254/paperbackup"
 # source=("$pkgname::git+$url#branch=main")
