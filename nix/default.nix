@@ -52,7 +52,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
         echo "DEBUG: SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
   '';
 
-  cargoHash = "sha256-iSY2BmUQ/X9+Uu7G0uINFuhZB2ieU++shV30RSGKt94=";
+  cargoHash = "sha256-MkKvcI9valMIMpS33zjXk0ntPMLq/QD4SgXWexwqNPA=";
 
   meta = {
     description = "paperbackup-git";
