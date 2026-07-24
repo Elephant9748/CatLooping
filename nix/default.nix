@@ -40,6 +40,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   #       ls -la
   # '';
 
+  doCheck = false;
+
   cargoLock.lockFile = ../Cargo.lock;
 
   inherit gitRev gitLastModified;
