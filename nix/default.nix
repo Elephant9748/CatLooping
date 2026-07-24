@@ -40,9 +40,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
   #       ls -la
   # '';
 
+  cargoLock.lockFile = ../Cargo.lock;
+
   inherit gitRev gitLastModified;
 
-  nativeBuildInputs = [ git ];
+  nativeBuildInputs = [ git perl ];
+  buildInputs = [ openssl ];
 
   preConfigure = ''
         export GIT_HASH="${gitRev}"
