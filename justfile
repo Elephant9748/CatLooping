@@ -26,4 +26,7 @@ aur-install:
         #!/usr/bin/env bash
         cd aur 
         makepkg -si
+# build for nixos
+nix:
+        nix build . --impure -L
 
