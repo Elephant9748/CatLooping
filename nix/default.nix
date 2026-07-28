@@ -9,11 +9,14 @@
   rustPlatform,
   git,
   stdenv,
-  gitRev,
-  gitLastModified
-
+  gitRev ? null,
+  gitLastModified ? null,
 }:
-
+let
+  rev = if gitRev == "" || gitRev == null then "rev" else gitRev;
+  date = if gitLastModified == "" || gitLastModified == null then "date" else gitLastModified;
+  lockfile = if builtins.pathExists ./Cargo.lock then  ./Cargo.lock else if builtins.pathExists ../Cargo.lock then ../Cargo.lock else null;
+in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "paperbackup";
   version = "1.2.0";
@@ -40,18 +43,19 @@ rustPlatform.buildRustPackage (finalAttrs: {
   #       ls -la
   # '';
 
+  # cargo test not include
   doCheck = false;
 
-  cargoLock.lockFile = ../Cargo.lock;
+  cargoLock.lockFile =  lockfile;
 
-  inherit gitRev gitLastModified;
+  # inherit gitRev gitLastModified;
 
   nativeBuildInputs = [ git perl ];
   buildInputs = [ openssl ];
 
   preConfigure = ''
-        export GIT_HASH="${gitRev}"
-        export DATE="${gitLastModified}"
+        export GIT_HASH="${rev}"
+        export DATE="${date}"
         echo "DEBUG: GIT_HASH=$GIT_HASH"
         echo "DEBUG: DATE=$DATE"
         echo "DEBUG: SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
