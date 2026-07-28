@@ -11,6 +11,8 @@
   stdenv,
   gitRev ? null,
   gitLastModified ? null,
+  openssl,
+  perl,
 }:
 let
   rev = if gitRev == "" || gitRev == null then "rev" else gitRev;
