@@ -21,7 +21,7 @@ let
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "paperbackup";
-  version = "1.2.0";
+  version = "1.2.1";
 
   # cargoLock.lockFile = ./Cargo.lock;
 
